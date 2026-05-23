@@ -1,0 +1,249 @@
+# Moffitt et al. 2015 — GSE71729
+# PDAC bulk microarray dataset
+#
+# Reference: Moffitt RA et al. (2015) Nat Genet 47:1168-1178
+#            https://doi.org/10.1038/ng.3398
+#
+# DESIGN PRINCIPLE:
+#   This manifest defines column semantics and safe interpretation rules.
+#   It does not encode observed counts, sample membership, or biological
+#   conclusions that can be computed from the data.
+#   Use dataset_count_metadata_values to compute counts from the loaded data.
+#   Tests assert known fixture counts; the manifest does not encode them.
+
+dataset_id: gse71729_moffitt
+
+title: "Moffitt et al. 2015 PDAC Bulk Microarray (GSE71729)"
+
+accession: GSE71729
+
+organism: human
+
+modality: bulk_microarray
+
+platform: "Agilent-028004 SurePrint G3 Human GE 8x60K"
+
+data_level: log_expression
+# Single-channel Agilent array; values are log2-normalised intensities.
+# Do NOT apply decoupler_preprocess_data or DESeq2.
+
+feature_id_type: gene_symbol
+# var.index contains HGNC gene symbols — depositors collapsed probes before GEO submission.
+
+description: >
+  Pancreatic ductal adenocarcinoma (PDAC) bulk microarray from Moffitt et al.
+  2015 (Nature Genetics). Defines classical and basal-like PDAC subtypes.
+  Dataset contains heterogeneous sample origins; tumor subtypes are a subset
+  of annotated samples. Expression values are log2-normalised; do not re-normalise.
+
+publication:
+  doi: "10.1038/ng.3398"
+  authors: "Moffitt RA, Marayati R, Flate EL, et al."
+  year: 2015
+  journal: "Nature Genetics"
+  title: >
+    Virtual microdissection identifies distinct tumor- and stroma-specific
+    subtypes of pancreatic ductal adenocarcinoma
+
+expression_source:
+  type: geo_series_matrix
+  url: "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE71nnn/GSE71729/matrix/GSE71729_series_matrix.txt.gz"
+  format: gz
+
+metadata_source:
+  type: geo_series_matrix
+  embedded: true
+  note: >
+    Sample characteristics are in !Sample_characteristics_ch1 lines.
+    Numeric encodings (e.g. tumor_subtype_0na_1classical_2basal) are decoded
+    automatically by decoupler_load_geo_series_matrix, producing companion
+    columns named by the base_name prefix.
+
+sample_id_column: null
+# GSM accession IDs are stored in the obs DataFrame index, not a column.
+
+# ---------------------------------------------------------------------------
+# Metadata column semantic definitions
+# ---------------------------------------------------------------------------
+# Defines roles, allowed values, missing-value meanings, and analysis rules.
+# Does NOT store observed counts or biological conclusions about sample identity.
+# Use dataset_count_metadata_values to compute counts from the loaded data.
+
+metadata_columns:
+
+  tumor_subtype:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "Classical"
+      - "Basal"
+    missing_values:
+      - ""
+      - "NA"
+      - "nan"
+    empty_value_meaning: >
+      No tumor-subtype annotation in this column. This is a missing/unannotated
+      value for tumor_subtype, not a biological category.
+    code_map:
+      "0": "NA"
+      "1": "Classical"
+      "2": "Basal"
+    source_column: "tumor_subtype_0na_1classical_2basal"
+    decoded_column: "tumor_subtype"
+    interpretation_warning: >
+      For Classical-vs-Basal analyses, subset to samples with non-missing
+      tumor_subtype values. Do not infer biological sample class from missing
+      tumor_subtype alone. To characterize missing tumor_subtype samples,
+      compute a crosstab against source/status metadata.
+    reporting_rules:
+      - "Report counts computed from the loaded data."
+      - "Report Classical and Basal separately."
+      - "Report missing tumor_subtype values as 'No tumor-subtype annotation'."
+      - "Distinguish samples with tumor_subtype annotations from samples without tumor_subtype annotations."
+      - "State any subset query used."
+    refusal_rules:
+      - "Refuse to compare empty/missing tumor_subtype as if it were a biological group."
+      - "Refuse to label missing tumor_subtype samples as non-tumor, reference RNA,
+        normal, cell-line, or metastatic without checking source metadata."
+      - "Refuse DE on the full dataset if the comparison is Classical vs Basal
+        and no tumor_subtype subset has been applied."
+      - "Refuse survival analysis on this column — survival data is not provided
+        by this GEO series matrix."
+
+  stroma_subtype:
+    role: secondary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "Low"
+      - "Normal"
+      - "Activated"
+    missing_values:
+      - ""
+      - "NA"
+      - "nan"
+    empty_value_meaning: >
+      No stroma-subtype annotation in this column. This is a missing/unannotated
+      value for stroma_subtype, not a biological category.
+    code_map:
+      "0": "NA"
+      "1": "Low"
+      "2": "Normal"
+      "3": "Activated"
+    source_column: "stroma_subtype_0na_1low_2normal_3activated"
+    decoded_column: "stroma_subtype"
+    interpretation_warning: >
+      Stroma subtype and tumor subtype were defined jointly in this study.
+      Use the same subset query for stroma analyses as for tumor subtype analyses.
+      Compute group sizes from the loaded data before comparing stroma subtypes.
+    reporting_rules:
+      - "Report counts computed from the loaded data."
+      - "State any subset query used alongside stroma subtype results."
+    refusal_rules:
+      - "Refuse stroma subtype comparison without first applying a tumor_subtype
+        subset, unless the analysis explicitly includes all sample origins."
+
+  sample_type:
+    role: technical_metadata
+    biological_grouping_allowed: false
+    interpretation_warning: >
+      sample_type is a technical/submission field. Verify from the loaded data
+      whether it contains meaningful variation before using it. Do not use it
+      as a grouping variable for DE or enrichment analysis.
+    refusal_rules:
+      - "Refuse to use sample_type as a grouping variable."
+      - "Refuse to interpret sample_type as biological sample identity."
+      - "Refuse to report sample_type value counts as biologically meaningful."
+
+  "cell_line/tissue":
+    role: sample_origin
+    biological_grouping_allowed: true
+    interpretation_warning: >
+      This is a source/tissue label. Use it to summarize or stratify sample
+      origins, but compute group sizes from the loaded data before analysis.
+      Do not assume it fully resolves tumor/normal/primary/metastatic status.
+    reporting_rules:
+      - "Report source/tissue group sizes as computed from the loaded data."
+      - "Do not assume source/tissue group adequacy without computed group counts."
+    refusal_rules:
+      - "Refuse DE on groups with fewer than 3 samples."
+
+# ---------------------------------------------------------------------------
+# Dataset-level reporting and refusal rules
+# ---------------------------------------------------------------------------
+
+reporting_rules:
+  - "Report dataset size as computed from the loaded data."
+  - "Clarify that expression values are pre-normalised log2 intensities."
+  - "Do not apply DESeq2 to this dataset — data_level is log_expression, not raw_counts."
+  - "State any subset query used in reported results."
+
+refusal_rules:
+  - "Refuse DESeq2 analysis — data_level is log_expression, not raw_counts."
+  - "Refuse survival analysis — survival endpoints are not provided by this GEO series matrix;
+    use external supplementary/clinical data only if explicitly loaded."
+  - "Refuse any claim that missing tumor_subtype means a specific biological category
+    without computing that from source/status metadata."
+
+# ---------------------------------------------------------------------------
+# Analysis configuration (semantics only — no sample counts)
+# ---------------------------------------------------------------------------
+
+group_columns:
+  - "tumor_subtype"
+  - "stroma_subtype"
+  - "cell_line/tissue"
+
+feature_mapping:
+  requires_collapse: false
+  # Gene symbols already in var.index — no probe collapse needed.
+
+survival_columns:
+  event_column: null
+  time_column: null
+
+default_contrasts:
+  - design_factor: "tumor_subtype"
+    test_group: "Classical"
+    control_group: "Basal"
+    subset_query: "tumor_subtype != ''"
+    method: limma
+    fallback_method: ttest
+    # limma preferred for pre-normalised microarray data (empirical Bayes).
+    # ttest fallback when R/limma is unavailable.
+
+  - design_factor: "stroma_subtype"
+    test_group: "Activated"
+    control_group: "Low"
+    subset_query: "stroma_subtype != ''"
+    method: limma
+    fallback_method: ttest
+    # Most extreme stroma contrast; Activated stroma associated with poor prognosis
+    # in Moffitt et al. 2015. Compute group sizes before running.
+
+  - design_factor: "stroma_subtype"
+    test_group: "Normal"
+    control_group: "Low"
+    subset_query: "stroma_subtype != ''"
+    method: limma
+    fallback_method: ttest
+
+  - design_factor: "stroma_subtype"
+    test_group: "Activated"
+    control_group: "Normal"
+    subset_query: "stroma_subtype != ''"
+    method: limma
+    fallback_method: ttest
+
+valid_workflows:
+  - microarray
+  - activity_scoring
+  - activity_stats
+
+limitations:
+  - "Tumor subtype annotations apply only to samples with non-missing tumor_subtype values."
+  - "Stroma subtype annotations apply only to samples with non-missing stroma_subtype values.
+    Compute group sizes from the loaded data before running stroma contrasts."
+  - "Expression values are pre-normalised log2 intensities. Do not apply
+    decoupler_preprocess_data or DESeq2."
+  - "Dataset contains heterogeneous sample origins; inspect source/status metadata
+    before PDAC-specific analysis."
