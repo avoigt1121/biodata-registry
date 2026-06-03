@@ -1,0 +1,143 @@
+# Zhang et al. — GSE28735
+# PDAC bulk microarray — matched tumor vs adjacent non-tumor tissue
+#
+# Reference: Zhang G et al. (2012)
+#            "Identification of a novel model for gene expression profiling
+#             of pancreatic ductal adenocarcinoma"
+#            https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE28735
+#
+# DESIGN PRINCIPLE:
+#   Manifest defines column semantics and safe interpretation rules.
+#   Does not encode observed counts or biological conclusions.
+#   Use dataset_count_metadata_values to compute counts from loaded data.
+#   Run dataset_validate_manifest_against_data after loading to confirm
+#   metadata column names and values match this manifest.
+
+dataset_id: gse28735_pdac
+
+title: "Zhang et al. PDAC Matched Tumor vs Adjacent Non-Tumor Bulk Microarray (GSE28735)"
+
+accession: GSE28735
+
+organism: human
+
+modality: bulk_microarray
+
+platform: "Affymetrix Human Gene 1.0 ST Array (GPL6244)"
+
+data_level: log_expression
+# Affymetrix RMA-normalised log2 expression values.
+# Do NOT apply DESeq2 or decoupler_preprocess_data.
+
+feature_id_type: gene_symbol
+# var.index contains gene symbols directly (transcript-level array, gene-summarised).
+# No probe collapse step required — proceed directly to enrichment tools.
+
+description: >
+  Pancreatic ductal adenocarcinoma (PDAC) vs. adjacent non-tumoral tissue bulk
+  microarray from Zhang et al. 2012. 90 samples: 45 matched tumor-normal pairs
+  from the same patients. Gene symbols are already present in var.index
+  (no probe collapse required). Paired design is NOT currently supported —
+  use unpaired analysis (limma/ttest) and note the pairing in result summaries.
+
+publication:
+  doi: ""  # TODO: verify DOI
+  authors: "Zhang G et al."
+  year: 2012
+  journal: ""  # TODO: verify journal
+  title: >
+    Identification of a novel model for gene expression profiling
+    of pancreatic ductal adenocarcinoma
+
+expression_source:
+  type: geo_series_matrix
+  url: "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE28nnn/GSE28735/matrix/GSE28735_series_matrix.txt.gz"
+  format: gz
+
+metadata_source:
+  type: geo_series_matrix
+  embedded: true
+  note: >
+    Sample characteristics are in !Sample_characteristics_ch1 lines.
+    TODO: load data and run dataset_validate_manifest_against_data to confirm
+    exact column names and values before analysis.
+
+sample_id_column: null
+
+# ---------------------------------------------------------------------------
+# Metadata column semantic definitions
+# TODO: load the series matrix and verify exact column names and value spellings.
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  tissue_type:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "tumor"   # TODO: verify exact string (may be "PDAC" or "pancreatic tumor")
+      - "normal"  # TODO: verify exact string (may be "adjacent non-tumor" or "non-tumoral")
+    missing_values:
+      - ""
+      - "NA"
+      - "nan"
+    empty_value_meaning: >
+      No tissue type annotation. Do not infer tissue category from missing value.
+    interpretation_warning: >
+      Dataset contains 45 matched tumor-normal pairs. Paired DE analysis is not
+      currently supported — use limma or ttest treating all samples independently.
+      Acknowledge pairing in result summaries: within-patient variation is not
+      accounted for and may reduce effective statistical power.
+    reporting_rules:
+      - "Report counts computed from loaded data, not from this manifest."
+      - "Note that paired design is not accounted for in unpaired analysis."
+      - "State any subset query applied."
+    refusal_rules:
+      - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
+      - "Refuse survival analysis — no survival endpoints in this GEO submission."
+      - "Refuse to claim paired-analysis results — only unpaired methods are supported."
+
+reporting_rules:
+  - "Clarify that expression values are RMA-normalised log2 intensities."
+  - "Note that gene symbols are already in var.index — no probe collapse required."
+  - "Note the paired design limitation (45 matched pairs, unpaired analysis used)."
+  - "State any subset query used."
+
+refusal_rules:
+  - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
+  - "Refuse to claim paired analysis was performed."
+
+group_columns:
+  - "tissue_type"  # TODO: verify exact column name after loading
+
+feature_mapping:
+  requires_collapse: false
+  # Gene symbols already present in var.index — no probe annotation or collapse needed.
+  collapse_method: null
+  multi_gene_policy: null
+
+survival_columns:
+  event_column: null
+  time_column: null
+
+default_contrasts:
+  - design_factor: "tissue_type"  # TODO: verify exact column name
+    test_group: "tumor"           # TODO: verify exact value string
+    control_group: "normal"       # TODO: verify exact value string
+    subset_query: null
+    method: limma
+    fallback_method: ttest
+    # limma preferred for RMA-normalised microarray data.
+    # 45 paired samples — unpaired analysis only; note limitation.
+
+valid_workflows:
+  - microarray
+  - activity_scoring
+  - activity_stats
+
+limitations:
+  - "Paired tumor-normal design (45 matched pairs) — paired DE not currently
+     supported; unpaired limma/ttest used instead."
+  - "Metadata column names are TODO-marked — run dataset_validate_manifest_against_data
+     after loading to confirm exact column names and values."
+  - "No survival endpoints in this GEO submission."

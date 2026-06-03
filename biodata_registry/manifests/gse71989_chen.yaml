@@ -1,0 +1,145 @@
+# Chen et al. — GSE71989
+# PDAC bulk microarray — normal pancreas vs PDAC vs chronic pancreatitis
+#
+# Reference: Chen X et al. (2016)
+#            "The gene expression of normal pancreatic and PDAC tissues"
+#            https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE71989
+#
+# DESIGN PRINCIPLE:
+#   Manifest defines column semantics and safe interpretation rules.
+#   Does not encode observed counts or biological conclusions.
+#   Use dataset_count_metadata_values to compute counts from loaded data.
+#   Run dataset_validate_manifest_against_data after loading to confirm
+#   metadata column names and values match this manifest.
+
+dataset_id: gse71989_chen
+
+title: "Chen et al. Normal Pancreas and PDAC Bulk Microarray (GSE71989)"
+
+accession: GSE71989
+
+organism: human
+
+modality: bulk_microarray
+
+platform: "Affymetrix Human Genome U133 Plus 2.0 Array (GPL570)"
+
+data_level: log_expression
+# Affymetrix RMA-normalised log2 expression values.
+# Do NOT apply DESeq2 or decoupler_preprocess_data.
+
+feature_id_type: probe_id
+# var.index contains Affymetrix probe IDs — must be collapsed to gene symbols
+# using decoupler_annotate_microarray_probes(gpl="GPL570") then
+# decoupler_collapse_probes_to_genes before running enrichment tools.
+
+description: >
+  Pancreatic ductal adenocarcinoma (PDAC) vs. normal pancreatic tissue bulk
+  microarray from Chen et al. 22 samples total: 8 normal pancreatic tissue,
+  13 PDAC, 1 chronic pancreatitis. Small cohort; primarily useful for
+  tumor-vs-normal TF and pathway activity inference.
+
+publication:
+  doi: ""  # TODO: verify DOI for this GEO submission
+  authors: "Chen X et al."
+  year: 2016
+  journal: ""  # TODO: verify journal
+  title: "The gene expression of normal pancreatic and PDAC tissues"
+
+expression_source:
+  type: geo_series_matrix
+  url: "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE71nnn/GSE71989/matrix/GSE71989_series_matrix.txt.gz"
+  format: gz
+
+metadata_source:
+  type: geo_series_matrix
+  embedded: true
+  note: >
+    Sample characteristics are in !Sample_characteristics_ch1 lines.
+    TODO: load data and run dataset_validate_manifest_against_data to confirm
+    exact column names and values before analysis.
+
+sample_id_column: null
+# GSM accession IDs stored in obs DataFrame index.
+
+# ---------------------------------------------------------------------------
+# Metadata column semantic definitions
+# TODO: load the series matrix and verify exact column names and value spellings
+# using dataset_validate_manifest_against_data before trusting these definitions.
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  tissue_type:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "normal"       # TODO: verify exact string (may be "normal pancreatic" or "normal pancreas")
+      - "PDAC"         # TODO: verify exact string (may be "pancreatic ductal adenocarcinoma" or "tumor")
+      - "chronic pancreatitis"  # TODO: verify exact string
+    missing_values:
+      - ""
+      - "NA"
+      - "nan"
+    empty_value_meaning: >
+      No tissue type annotation. Do not infer tissue category from missing value.
+    interpretation_warning: >
+      Exclude the chronic pancreatitis sample when running PDAC vs. normal contrast.
+      Small sample size (8 normal, 13 PDAC) limits statistical power — treat results
+      as exploratory and validate in larger cohorts.
+    reporting_rules:
+      - "Report counts computed from loaded data, not from this manifest."
+      - "State any subset query applied (e.g. excluding chronic pancreatitis)."
+      - "Note the small sample size in any result summary."
+    refusal_rules:
+      - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
+      - "Refuse survival analysis — no survival endpoints in this GEO submission."
+      - "Refuse to include chronic pancreatitis sample in PDAC vs. normal contrast
+         without explicit user instruction."
+
+reporting_rules:
+  - "Clarify that expression values are RMA-normalised log2 intensities."
+  - "Note that probe collapse to gene symbols is required before enrichment analysis."
+  - "Note small sample size (n=22 total) in all result summaries."
+  - "State any subset query used."
+
+refusal_rules:
+  - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
+  - "Refuse survival analysis — survival endpoints not provided."
+  - "Refuse enrichment analysis before probe collapse step is confirmed."
+
+group_columns:
+  - "tissue_type"  # TODO: verify exact column name after loading
+
+feature_mapping:
+  requires_collapse: true
+  gene_symbol_column: "Gene Symbol"  # TODO: verify against GPL570 annotation columns
+  collapse_method: mean
+  multi_gene_policy: drop
+
+survival_columns:
+  event_column: null
+  time_column: null
+
+default_contrasts:
+  - design_factor: "tissue_type"  # TODO: verify exact column name
+    test_group: "PDAC"            # TODO: verify exact value string
+    control_group: "normal"       # TODO: verify exact value string
+    subset_query: "tissue_type != 'chronic pancreatitis'"  # TODO: update with verified column/value
+    method: limma
+    fallback_method: ttest
+    # limma preferred for RMA-normalised microarray data.
+    # Small n (8 vs 13) — empirical Bayes shrinkage helps with variance estimation.
+
+valid_workflows:
+  - microarray
+  - activity_scoring
+  - activity_stats
+
+limitations:
+  - "Small sample size (8 normal, 13 PDAC, 1 chronic pancreatitis) — treat as exploratory."
+  - "Probe collapse to gene symbols required before enrichment analysis."
+  - "Metadata column names are TODO-marked — run dataset_validate_manifest_against_data
+     after loading to confirm exact column names and values."
+  - "Chronic pancreatitis sample must be excluded from PDAC vs. normal contrast."
+  - "No survival endpoints provided in this GEO submission."

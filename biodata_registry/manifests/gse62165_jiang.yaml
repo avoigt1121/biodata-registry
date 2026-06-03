@@ -1,0 +1,143 @@
+# Jiang et al. — GSE62165
+# PDAC bulk microarray — molecular subtypes and master regulators
+#
+# Reference: Jiang W et al. (2015)
+#            "Prognostic relevance of molecular subtypes and master regulators
+#             in pancreatic ductal adenocarcinoma"
+#            https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE62165
+#
+# DESIGN PRINCIPLE:
+#   Manifest defines column semantics and safe interpretation rules.
+#   Does not encode observed counts or biological conclusions.
+#   Use dataset_count_metadata_values to compute counts from loaded data.
+#   Run dataset_validate_manifest_against_data after loading to confirm
+#   metadata column names and values match this manifest.
+
+dataset_id: gse62165_jiang
+
+title: "Jiang et al. PDAC Molecular Subtypes Bulk Microarray (GSE62165)"
+
+accession: GSE62165
+
+organism: human
+
+modality: bulk_microarray
+
+platform: "Affymetrix Human Genome U219 Array (GPL13667)"
+
+data_level: log_expression
+# Affymetrix RMA-normalised log2 expression values.
+# Do NOT apply DESeq2 or decoupler_preprocess_data.
+
+feature_id_type: probe_id
+# var.index contains Affymetrix probe IDs — must be collapsed to gene symbols
+# using decoupler_annotate_microarray_probes(gpl="GPL13667") then
+# decoupler_collapse_probes_to_genes before running enrichment tools.
+
+description: >
+  Pancreatic ductal adenocarcinoma (PDAC) bulk microarray from Jiang et al.
+  2015. 131 samples: 118 PDAC whole-tumor tissue samples and 13 normal
+  pancreatic controls. Largest of the four tumor-vs-normal cohorts.
+  Also contains molecular subtype annotations relevant to subtype-level
+  TF and pathway activity inference.
+
+publication:
+  doi: ""  # TODO: verify DOI for this submission
+  authors: "Jiang W et al."
+  year: 2015
+  journal: ""  # TODO: verify journal
+  title: >
+    Prognostic relevance of molecular subtypes and master regulators
+    in pancreatic ductal adenocarcinoma
+
+expression_source:
+  type: geo_series_matrix
+  url: "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE62nnn/GSE62165/matrix/GSE62165_series_matrix.txt.gz"
+  format: gz
+
+metadata_source:
+  type: geo_series_matrix
+  embedded: true
+  note: >
+    Sample characteristics are in !Sample_characteristics_ch1 lines.
+    TODO: load data and run dataset_validate_manifest_against_data to confirm
+    exact column names and values before analysis.
+
+sample_id_column: null
+
+# ---------------------------------------------------------------------------
+# Metadata column semantic definitions
+# TODO: load the series matrix and verify exact column names and value spellings.
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  tissue_type:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "PDAC"    # TODO: verify exact string
+      - "normal"  # TODO: verify exact string (may be "normal control" or "normal pancreas")
+    missing_values:
+      - ""
+      - "NA"
+      - "nan"
+    empty_value_meaning: >
+      No tissue type annotation. Do not infer tissue category from missing value.
+    interpretation_warning: >
+      Highly imbalanced design: 118 PDAC vs 13 normal controls. Statistical
+      comparisons are valid but power for normal-specific signals is limited.
+      Interpret TF/pathway activities as PDAC-enriched rather than normal-depleted
+      without additional validation.
+    reporting_rules:
+      - "Report counts computed from loaded data, not from this manifest."
+      - "Note the imbalanced design (118 PDAC vs 13 normal) in result summaries."
+      - "State any subset query applied."
+    refusal_rules:
+      - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
+      - "Refuse survival analysis — verify survival columns exist before attempting."
+
+reporting_rules:
+  - "Clarify that expression values are RMA-normalised log2 intensities."
+  - "Note that probe collapse to gene symbols is required before enrichment analysis."
+  - "Note imbalanced design (118 PDAC vs 13 normal) in all result summaries."
+  - "State any subset query used."
+
+refusal_rules:
+  - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
+  - "Refuse enrichment analysis before probe collapse step is confirmed."
+
+group_columns:
+  - "tissue_type"  # TODO: verify exact column name after loading
+
+feature_mapping:
+  requires_collapse: true
+  gene_symbol_column: "Gene Symbol"  # TODO: verify against GPL13667 annotation columns
+  collapse_method: mean
+  multi_gene_policy: drop
+
+survival_columns:
+  event_column: null  # TODO: check if survival data is available in supplementary
+  time_column: null
+
+default_contrasts:
+  - design_factor: "tissue_type"  # TODO: verify exact column name
+    test_group: "PDAC"            # TODO: verify exact value string
+    control_group: "normal"       # TODO: verify exact value string
+    subset_query: null
+    method: limma
+    fallback_method: ttest
+    # limma preferred for RMA-normalised microarray data.
+    # Largest dataset of the four cohorts — good power for TF/pathway inference.
+
+valid_workflows:
+  - microarray
+  - activity_scoring
+  - activity_stats
+
+limitations:
+  - "Imbalanced design: 118 PDAC vs 13 normal controls."
+  - "Probe collapse to gene symbols required before enrichment analysis."
+  - "Metadata column names are TODO-marked — run dataset_validate_manifest_against_data
+     after loading to confirm exact column names and values."
+  - "No confirmed survival endpoints — check supplementary data before survival analysis."
