@@ -2,16 +2,10 @@
 # PDAC bulk microarray — molecular subtypes and master regulators
 #
 # Reference: Jiang W et al. (2015)
-#            "Prognostic relevance of molecular subtypes and master regulators
-#             in pancreatic ductal adenocarcinoma"
 #            https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE62165
 #
-# DESIGN PRINCIPLE:
-#   Manifest defines column semantics and safe interpretation rules.
-#   Does not encode observed counts or biological conclusions.
-#   Use dataset_count_metadata_values to compute counts from loaded data.
-#   Run dataset_validate_manifest_against_data after loading to confirm
-#   metadata column names and values match this manifest.
+# VALIDATED: column names and values confirmed from GEO header inspection (June 2026).
+# Golden counts: pancreatic tumor=118, non-tumoral=13, total=131
 
 dataset_id: gse62165_jiang
 
@@ -31,21 +25,19 @@ data_level: log_expression
 
 feature_id_type: probe_id
 # var.index contains Affymetrix probe IDs — must be collapsed to gene symbols
-# using decoupler_annotate_microarray_probes(gpl="GPL13667") then
+# using decoupler_annotate_probes_with_gpl(gpl_accession_or_url="GPL13667") then
 # decoupler_collapse_probes_to_genes before running enrichment tools.
 
 description: >
-  Pancreatic ductal adenocarcinoma (PDAC) bulk microarray from Jiang et al.
-  2015. 131 samples: 118 PDAC whole-tumor tissue samples and 13 normal
-  pancreatic controls. Largest of the four tumor-vs-normal cohorts.
-  Also contains molecular subtype annotations relevant to subtype-level
-  TF and pathway activity inference.
+  Pancreatic ductal adenocarcinoma (PDAC) bulk microarray from Jiang et al. 2015.
+  131 samples: 118 PDAC whole-tumor tissue and 13 non-tumoral pancreatic controls.
+  Largest of the four PDAC cohorts. Contains staging information (Stage, grouped stage).
 
 publication:
-  doi: ""  # TODO: verify DOI for this submission
+  doi: ""
   authors: "Jiang W et al."
   year: 2015
-  journal: ""  # TODO: verify journal
+  journal: ""
   title: >
     Prognostic relevance of molecular subtypes and master regulators
     in pancreatic ductal adenocarcinoma
@@ -59,25 +51,21 @@ metadata_source:
   type: geo_series_matrix
   embedded: true
   note: >
-    Sample characteristics are in !Sample_characteristics_ch1 lines.
-    TODO: load data and run dataset_validate_manifest_against_data to confirm
-    exact column names and values before analysis.
+    Confirmed columns from GEO header:
+      tissue: "pancreatic tumor" (118) | "non-tumoral pancreatic tissue" (13)
+      stage: "2b" (62) | "2a" (30) | "4" (13) | "1b" (7) | "3" (5) | "1a" (1) | "NA" (13)
+      grouped_stage: "LNM" (62) | "Early" (38) | "Advanced" (18) | "NA" (13)
 
 sample_id_column: null
 
-# ---------------------------------------------------------------------------
-# Metadata column semantic definitions
-# TODO: load the series matrix and verify exact column names and value spellings.
-# ---------------------------------------------------------------------------
-
 metadata_columns:
 
-  tissue_type:
+  tissue:
     role: primary_condition
     biological_grouping_allowed: true
     allowed_values:
-      - "PDAC"    # TODO: verify exact string
-      - "normal"  # TODO: verify exact string (may be "normal control" or "normal pancreas")
+      - "pancreatic tumor"
+      - "non-tumoral pancreatic tissue"
     missing_values:
       - ""
       - "NA"
@@ -87,19 +75,39 @@ metadata_columns:
     interpretation_warning: >
       Highly imbalanced design: 118 PDAC vs 13 normal controls. Statistical
       comparisons are valid but power for normal-specific signals is limited.
-      Interpret TF/pathway activities as PDAC-enriched rather than normal-depleted
-      without additional validation.
     reporting_rules:
       - "Report counts computed from loaded data, not from this manifest."
       - "Note the imbalanced design (118 PDAC vs 13 normal) in result summaries."
       - "State any subset query applied."
     refusal_rules:
       - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
-      - "Refuse survival analysis — verify survival columns exist before attempting."
+
+  stage:
+    role: covariate
+    biological_grouping_allowed: true
+    allowed_values:
+      - "1a"
+      - "1b"
+      - "2a"
+      - "2b"
+      - "3"
+      - "4"
+      - "NA"
+    description: "AJCC tumor stage. NA for normal tissue controls."
+
+  grouped_stage:
+    role: covariate
+    biological_grouping_allowed: true
+    allowed_values:
+      - "Early"
+      - "LNM"
+      - "Advanced"
+      - "NA"
+    description: "Grouped staging: Early (stage 1-2a), LNM (lymph node metastasis, 2b), Advanced (3-4). NA for normal tissue controls."
 
 reporting_rules:
   - "Clarify that expression values are RMA-normalised log2 intensities."
-  - "Note that probe collapse to gene symbols is required before enrichment analysis."
+  - "Note that probe collapse to gene symbols (GPL13667) is required before enrichment analysis."
   - "Note imbalanced design (118 PDAC vs 13 normal) in all result summaries."
   - "State any subset query used."
 
@@ -108,27 +116,26 @@ refusal_rules:
   - "Refuse enrichment analysis before probe collapse step is confirmed."
 
 group_columns:
-  - "tissue_type"  # TODO: verify exact column name after loading
+  - "tissue"
+  - "grouped_stage"
 
 feature_mapping:
   requires_collapse: true
-  gene_symbol_column: "Gene Symbol"  # TODO: verify against GPL13667 annotation columns
+  gene_symbol_column: "Gene Symbol"
   collapse_method: mean
   multi_gene_policy: drop
 
 survival_columns:
-  event_column: null  # TODO: check if survival data is available in supplementary
+  event_column: null
   time_column: null
 
 default_contrasts:
-  - design_factor: "tissue_type"  # TODO: verify exact column name
-    test_group: "PDAC"            # TODO: verify exact value string
-    control_group: "normal"       # TODO: verify exact value string
+  - design_factor: "tissue"
+    test_group: "pancreatic tumor"
+    control_group: "non-tumoral pancreatic tissue"
     subset_query: null
     method: limma
     fallback_method: ttest
-    # limma preferred for RMA-normalised microarray data.
-    # Largest dataset of the four cohorts — good power for TF/pathway inference.
 
 valid_workflows:
   - microarray
@@ -136,8 +143,6 @@ valid_workflows:
   - activity_stats
 
 limitations:
+  - "Probe collapse to gene symbols (GPL13667) required before enrichment analysis."
   - "Imbalanced design: 118 PDAC vs 13 normal controls."
-  - "Probe collapse to gene symbols required before enrichment analysis."
-  - "Metadata column names are TODO-marked — run dataset_validate_manifest_against_data
-     after loading to confirm exact column names and values."
-  - "No confirmed survival endpoints — check supplementary data before survival analysis."
+  - "No confirmed survival endpoints in GEO submission."
