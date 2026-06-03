@@ -59,8 +59,10 @@ metadata_source:
   embedded: true
   note: >
     Sample characteristics are in !Sample_characteristics_ch1 lines.
-    TODO: load data and run dataset_validate_manifest_against_data to confirm
-    exact column names and values before analysis.
+    Confirmed column names and values from GEO header inspection:
+      tissue: T (tumor) | N (normal)
+      survival_month: integer months
+      cancer_death: 1 (yes) | na (no/unknown)
 
 sample_id_column: null
 
@@ -71,12 +73,12 @@ sample_id_column: null
 
 metadata_columns:
 
-  tissue_type:
+  tissue:
     role: primary_condition
     biological_grouping_allowed: true
     allowed_values:
-      - "tumor"   # TODO: verify exact string (may be "PDAC" or "pancreatic tumor")
-      - "normal"  # TODO: verify exact string (may be "adjacent non-tumor" or "non-tumoral")
+      - "T"   # tumor
+      - "N"   # adjacent non-tumoral tissue
     missing_values:
       - ""
       - "NA"
@@ -94,8 +96,20 @@ metadata_columns:
       - "State any subset query applied."
     refusal_rules:
       - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
-      - "Refuse survival analysis — no survival endpoints in this GEO submission."
       - "Refuse to claim paired-analysis results — only unpaired methods are supported."
+
+  survival_month:
+    role: clinical
+    biological_grouping_allowed: false
+    description: "Overall survival in months from surgery."
+
+  cancer_death:
+    role: clinical
+    biological_grouping_allowed: false
+    allowed_values:
+      - "1"   # died from cancer
+      - "na"  # did not die from cancer or unknown
+    description: "Cancer-specific death event (1=yes, na=no/unknown)."
 
 reporting_rules:
   - "Clarify that expression values are RMA-normalised log2 intensities."
@@ -106,9 +120,10 @@ reporting_rules:
 refusal_rules:
   - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
   - "Refuse to claim paired analysis was performed."
+  - "Refuse survival analysis unless survival_month and cancer_death columns are explicitly loaded and confirmed present."
 
 group_columns:
-  - "tissue_type"  # TODO: verify exact column name after loading
+  - "tissue"
 
 feature_mapping:
   requires_collapse: false
@@ -117,13 +132,13 @@ feature_mapping:
   multi_gene_policy: null
 
 survival_columns:
-  event_column: null
-  time_column: null
+  event_column: "cancer_death"   # 1 = event, na = censored
+  time_column: "survival_month"
 
 default_contrasts:
-  - design_factor: "tissue_type"  # TODO: verify exact column name
-    test_group: "tumor"           # TODO: verify exact value string
-    control_group: "normal"       # TODO: verify exact value string
+  - design_factor: "tissue"
+    test_group: "T"
+    control_group: "N"
     subset_query: null
     method: limma
     fallback_method: ttest
@@ -136,8 +151,5 @@ valid_workflows:
   - activity_stats
 
 limitations:
-  - "Paired tumor-normal design (45 matched pairs) — paired DE not currently
-     supported; unpaired limma/ttest used instead."
-  - "Metadata column names are TODO-marked — run dataset_validate_manifest_against_data
-     after loading to confirm exact column names and values."
-  - "No survival endpoints in this GEO submission."
+  - "Paired tumor-normal design (45 matched pairs) — paired DE not currently supported; unpaired limma/ttest used instead."
+  - "Survival data present (survival_month, cancer_death) but survival analysis not yet validated for this dataset."
