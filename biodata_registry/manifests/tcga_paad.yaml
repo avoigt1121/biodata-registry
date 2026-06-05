@@ -1,0 +1,270 @@
+# TCGA-PAAD — The Cancer Genome Atlas Pancreatic Adenocarcinoma
+# Bulk RNA-seq via UCSC Xena (legacy TCGA hub)
+#
+# Expression: log2(RSEM expected_count + 1) normalized values
+#             Source: UCSC Xena tcga.xenahubs.net, HiSeqV2 pipeline
+# Clinical:   Xena clinicalMatrix with vital_status, days_to_death,
+#             days_to_last_followup
+#
+# ⚠ CONTAMINATION WARNING (Knudsen et al. 2019, PMC6357157):
+#   ~18.9% of samples (35/185) in the TCGA-PAAD cohort are NOT PDAC —
+#   they include adjacent normal tissue, neuroendocrine tumors, and
+#   contaminated biopsies. Using the uncurated cohort produces 5,312
+#   apparent prognostic genes; the curated PDAC-only set yields 4.
+#   This manifest loads the FULL uncurated cohort. DO NOT use survival
+#   or prognostic analyses without first curating to PDAC-only samples.
+#
+# VALIDATED: URLs confirmed functional (June 2026).
+# Feature IDs: HGNC gene symbols (Xena HiSeqV2 pipeline uses gene symbols,
+#              not Ensembl IDs). No probe collapse required.
+# Data level: normalized (log2(RSEM+1)); Path B (limma or ttest), NOT DESeq2.
+#
+# Note on clinical file format: Xena clinicalMatrix files have samples as rows
+# and clinical variables as columns. The first column ("sampleID") contains
+# TCGA sample barcodes matching the expression matrix column headers.
+
+dataset_id: tcga_paad
+
+title: "TCGA-PAAD Pancreatic Adenocarcinoma RNA-seq (UCSC Xena, 2016)"
+
+accession: TCGA-PAAD
+
+organism: human
+
+modality: bulk_rnaseq
+
+platform: "Illumina HiSeq 2000/2500 (HiSeqV2 pipeline)"
+
+data_level: normalized
+# log2(RSEM expected_count + 1) from UCSC Xena legacy TCGA hub.
+# PATH B: use limma or ttest for DE. Do NOT apply DESeq2 or
+# decoupler_preprocess_data — data is already normalized.
+
+feature_id_type: gene_symbol
+# var.index contains HGNC gene symbols (e.g. TSPAN6, TP53, KRAS).
+# The Xena HiSeqV2 pipeline outputs gene-symbol–indexed matrices.
+# No probe collapse or Ensembl conversion required before enrichment tools.
+
+description: >
+  Pancreatic ductal adenocarcinoma (PDAC) bulk RNA-seq from The Cancer Genome
+  Atlas (TCGA-PAAD), accessed via UCSC Xena legacy TCGA hub. Expression values
+  are log2(RSEM+1) normalized. Full uncurated cohort includes ~178 tumor and
+  ~4 adjacent normal samples; approximately 18.9% of samples are non-PDAC
+  (adjacent normal, neuroendocrine tumors, other histologies). Clinical metadata
+  includes survival endpoints (vital_status, days_to_death, days_to_last_followup)
+  and pathologic stage. Survival and prognostic analyses require curation to
+  PDAC-only samples — see refusal_rules.
+
+publication:
+  doi: "10.1038/ng.2764"
+  authors: "TCGA Research Network"
+  year: 2017
+  journal: "Cancer Cell"
+  title: "Integrated Genomic Characterization of Pancreatic Ductal Adenocarcinoma"
+
+expression_source:
+  type: url
+  url: "https://tcga.xenahubs.net/download/TCGA.PAAD.sampleMap/HiSeqV2.gz"
+  format: gz
+  orientation: genes_x_samples
+  note: >
+    Rows = HGNC gene symbols, columns = TCGA sample barcodes.
+    File is tab-separated, gzip-compressed.
+    Requires transposition to AnnData convention (samples × genes).
+    decoupler_load_url_counts handles this automatically.
+
+metadata_source:
+  type: supplementary_table
+  embedded: false
+  url: "https://tcga.xenahubs.net/download/TCGA.PAAD.sampleMap/PAAD_clinicalMatrix"
+  format: tsv
+  join_column: "sampleID"
+  truncate_to_patient: false
+  note: >
+    Xena clinicalMatrix file: rows = samples, columns = clinical variables.
+    First column "sampleID" contains TCGA sample barcodes matching the
+    expression matrix. direct join (truncate_to_patient=false) should work
+    because both files use the same Xena sample barcode format.
+    Key survival columns: vital_status, days_to_death, days_to_last_followup.
+
+sample_id_column: null
+# Sample barcodes are in the obs DataFrame index after loading.
+
+# ---------------------------------------------------------------------------
+# Metadata column definitions
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  vital_status:
+    role: clinical
+    biological_grouping_allowed: false
+    allowed_values:
+      - "alive"
+      - "dead"
+    missing_values:
+      - ""
+      - "NA"
+      - "nan"
+    interpretation_warning: >
+      vital_status reflects status at last clinical contact, not necessarily
+      cancer-specific death. For survival analysis, derive os_event from
+      vital_status and os_days from days_to_death or days_to_last_followup
+      using decoupler_join_clinical_metadata(add_survival_columns=True).
+    refusal_rules:
+      - "Refuse to use vital_status as a DE grouping variable."
+      - "Refuse survival analysis on the uncurated cohort without PDAC-only curation."
+
+  days_to_death:
+    role: clinical
+    biological_grouping_allowed: false
+    description: "Days from diagnosis to death; NaN for living patients."
+
+  days_to_last_followup:
+    role: clinical
+    biological_grouping_allowed: false
+    description: "Days from diagnosis to last clinical contact; NaN for deceased patients."
+
+  os_event:
+    role: clinical
+    biological_grouping_allowed: false
+    description: "Derived: 0 = alive/censored, 1 = deceased. From vital_status via join tool."
+
+  os_days:
+    role: clinical
+    biological_grouping_allowed: false
+    description: >
+      Derived: days from diagnosis to death (event) or last followup (censored).
+      From days_to_death and days_to_last_followup via join tool.
+
+  sample_type:
+    role: sample_origin
+    biological_grouping_allowed: true
+    allowed_values:
+      - "Primary Tumor"
+      - "Solid Tissue Normal"
+    missing_values:
+      - ""
+      - "NA"
+    interpretation_warning: >
+      sample_type distinguishes tumor from adjacent normal tissue. Only ~4
+      "Solid Tissue Normal" samples are available — tumor vs. normal DE is
+      severely underpowered. Do not run tumor vs. normal comparisons.
+    refusal_rules:
+      - "Refuse tumor vs. normal DE — only ~4 normal samples exist; the comparison is underpowered."
+
+  pathologic_stage:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "Stage I"
+      - "Stage IA"
+      - "Stage IB"
+      - "Stage II"
+      - "Stage IIA"
+      - "Stage IIB"
+      - "Stage III"
+      - "Stage IV"
+    missing_values:
+      - ""
+      - "NA"
+      - "[Not Available]"
+      - "[Discrepancy]"
+    interpretation_warning: >
+      Stage groupings have small and uneven sample counts. Compute group sizes
+      from the loaded data before any stage-stratified analysis. Most samples are
+      Stage II. Stages I, III, IV have very few samples — consider collapsing
+      to early (I+II) vs late (III+IV) for statistical power.
+    reporting_rules:
+      - "Report stage group sizes computed from the loaded data."
+      - "Note the uncurated cohort contamination when reporting stage distributions."
+
+# ---------------------------------------------------------------------------
+# Dataset-level guardrails
+# ---------------------------------------------------------------------------
+
+reporting_rules:
+  - "State that expression values are log2(RSEM+1) normalized (not raw counts)."
+  - "State the total sample count and warn about the 18.9% non-PDAC contamination."
+  - "State that survival and prognostic analyses are unreliable without curation."
+  - "Cite Knudsen et al. 2019 (PMC6357157) when reporting survival results."
+
+refusal_rules:
+  - >
+    Refuse DESeq2 analysis — data_level is normalized (log2(RSEM+1)), not raw_counts.
+    DESeq2 requires integer counts and will produce incorrect results on this data.
+  - >
+    Refuse decoupler_preprocess_data — data is already log2-normalized.
+    Applying additional normalization will distort the expression values.
+  - >
+    Refuse survival analysis or prognostic gene signature claims on the uncurated
+    cohort. Knudsen et al. 2019 (PMC6357157) showed that ~18.9% of TCGA-PAAD
+    samples are non-PDAC; uncurated survival analyses yield 5,312 apparent
+    prognostic genes while the curated PDAC-only cohort yields only 4.
+    Curation to PDAC-only samples is required before any survival-based analysis.
+  - >
+    Refuse tumor vs. normal DE comparison — only ~4 adjacent normal samples are
+    available in TCGA-PAAD. This comparison is statistically underpowered.
+  - >
+    Refuse to present any TCGA-PAAD findings as PDAC-specific without explicitly
+    noting the contamination risk and whether curation was applied.
+
+# ---------------------------------------------------------------------------
+# Analysis configuration
+# ---------------------------------------------------------------------------
+
+group_columns:
+  - "pathologic_stage"
+  - "sample_type"
+
+feature_mapping:
+  requires_collapse: false
+  # Gene symbols already in var.index — no probe collapse needed.
+
+survival_columns:
+  event_column: "os_event"
+  time_column: "os_days"
+  note: >
+    os_event and os_days are derived columns added by decoupler_join_clinical_metadata
+    with add_survival_columns=True. They are NOT present in the raw Xena clinical file.
+    Do NOT use survival analysis on the uncurated cohort — see refusal_rules.
+
+default_contrasts:
+  - design_factor: "pathologic_stage"
+    test_group: "Stage IIB"
+    control_group: "Stage IIA"
+    subset_query: "pathologic_stage.isin(['Stage IIA', 'Stage IIB'])"
+    method: ttest
+    fallback_method: ttest
+    note: >
+      Stage IIA vs IIB is the most-populated contrast within Stage II.
+      Compute group sizes from loaded data before running — expected to have
+      the most samples among all stage contrasts.
+
+valid_workflows:
+  - activity_scoring
+  - activity_stats
+  - survival
+
+limitations:
+  - >
+    CONTAMINATION: ~18.9% of samples (35/185) are non-PDAC (normal pancreas,
+    neuroendocrine tumors, metastatic lesions, contaminated biopsies). Cite
+    Knudsen et al. 2019 (PMC6357157). Survival and prognostic analyses on
+    the uncurated cohort are unreliable.
+  - >
+    Data is log2(RSEM+1) normalized — Path B only. DESeq2 and
+    decoupler_preprocess_data must NOT be used.
+  - >
+    Only ~4 adjacent normal samples. Tumor vs. normal DE is underpowered
+    and should not be run.
+  - >
+    Stage-stratified analyses are limited by small group sizes outside Stage II.
+    Collapse stages where needed and verify group counts before running DE.
+  - >
+    Survival columns (os_event, os_days) are derived by the clinical join tool
+    and require running decoupler_join_clinical_metadata before survival analysis.
+  - >
+    No molecular subtype annotations (classical/basal) are present in the
+    Xena clinical matrix. Moffitt subtypes are not available for this dataset
+    without a separate subtype classification step.
