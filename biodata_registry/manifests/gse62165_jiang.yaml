@@ -114,6 +114,7 @@ reporting_rules:
 refusal_rules:
   - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
   - "Refuse enrichment analysis before probe collapse step is confirmed."
+  - "Refuse survival analysis — no survival endpoints in this GEO submission."
 
 group_columns:
   - "tissue"
