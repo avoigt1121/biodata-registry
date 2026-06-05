@@ -19,9 +19,12 @@ modality: bulk_microarray
 
 platform: "Affymetrix Human Genome U133 Plus 2.0 Array (GPL570)"
 
-data_level: log_expression
-# Affymetrix RMA-normalised log2 expression values.
-# Do NOT apply DESeq2 or decoupler_preprocess_data.
+data_level: normalized
+# GEO series matrix contains linear-scale normalized expression values (NOT log2).
+# Values range ~2-65000; 48% of values exceed 20, inconsistent with log2 RMA.
+# (Compare: GSE71989 on the same GPL570 platform has log2 values in 3-15 range.)
+# Log2-transform before limma/ttest: X_log2 = log2(X + 1) or np.log2(X).
+# Do NOT use DESeq2 or decoupler_preprocess_data.
 
 feature_id_type: probe_id
 # var.index contains Affymetrix probe IDs — must be collapsed to gene symbols
@@ -33,6 +36,8 @@ description: >
   52 samples: 36 tumor and 16 normal. 16 samples are matched tumor-normal pairs
   from the same patients; 20 additional tumor-only samples. Paired design is NOT
   currently supported — use unpaired analysis (limma/ttest) and note the pairing.
+  IMPORTANT: GEO series matrix is in linear-scale normalized form (NOT log2).
+  Log2-transform before differential expression analysis.
 
 publication:
   doi: ""
@@ -81,7 +86,8 @@ metadata_columns:
       - "Note that paired design is not accounted for in unpaired analysis."
       - "State any subset query applied."
     refusal_rules:
-      - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
+      - "Refuse DESeq2 — data_level is normalized (linear scale), not raw_counts."
+      - "Refuse limma/ttest without first log2-transforming the data."
       - "Refuse survival analysis — no survival endpoints in this GEO submission."
       - "Refuse to claim paired-analysis results — only unpaired methods are supported."
 
@@ -98,13 +104,15 @@ metadata_columns:
     description: "Patient age at diagnosis (integer string)."
 
 reporting_rules:
-  - "Clarify that expression values are RMA-normalised log2 intensities."
+  - "Clarify that expression values are linear-scale normalized intensities — NOT log2."
+  - "Note that log2 transformation is required before differential expression analysis."
   - "Note that probe collapse to gene symbols is required before enrichment analysis."
   - "Note the paired design limitation (16 matched pairs + 20 tumor-only, unpaired analysis used)."
   - "State any subset query used."
 
 refusal_rules:
-  - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
+  - "Refuse DESeq2 — data_level is normalized (linear scale), not raw_counts."
+  - "Refuse limma/ttest without first log2-transforming the data."
   - "Refuse enrichment analysis before probe collapse step is confirmed."
   - "Refuse to claim paired analysis was performed."
 
@@ -135,6 +143,7 @@ valid_workflows:
   - activity_stats
 
 limitations:
+  - "GEO series matrix is in linear-scale normalized form — must log2-transform before DE analysis."
   - "Probe collapse to gene symbols (GPL570) required before enrichment analysis."
   - "Paired tumor-normal design (16 matched pairs) — paired DE not currently supported; unpaired limma/ttest used instead."
   - "Imbalanced: 36 tumor vs 16 normal."
