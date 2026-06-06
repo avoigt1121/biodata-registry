@@ -69,14 +69,14 @@ publication:
   title: "Integrated Genomic Characterization of Pancreatic Ductal Adenocarcinoma"
 
 expression_source:
-  type: gdc
-  project_id: TCGA-PAAD
-  workflow_type: "STAR - Counts"
-  count_column: unstranded
+  type: url
+  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/tcga_paad_gdc_star_counts.h5ad"
+  format: h5ad
   note: >
-    Raw integer counts downloaded via GDC bulk data API (open access, no auth).
-    ~178 per-sample TSVs fetched as a single tar.gz (~400-600 MB).
-    decoupler_load_gdc_star_counts handles download, parse, and assembly.
+    Pre-assembled h5ad from GDC STAR-Counts (183 samples x 59427 genes, raw int32 counts).
+    Hosted at anni-voigt/pdac-research-data on HuggingFace.
+    Regenerate from source with decoupler_load_gdc_star_counts("TCGA-PAAD").
+    data_level=raw_counts — Path A / DESeq2. Do not re-normalize.
 
 metadata_source:
   type: supplementary_table
