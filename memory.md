@@ -1,16 +1,16 @@
 # memory.md — biodata-registry Working State
 
-Last updated: 2026-06-05
+Last updated: 2026-06-06
 
 ---
 
 ## Current State
 
 Package is functional, tested, and imported by DecoupleRpy_Agent as the sole manifest source.
-6 manifests registered. All GEO manifests are fully validated against real data.
-TCGA-PAAD is the first non-GEO, non-microarray dataset.
+6 manifests registered. All GEO manifests fully validated. TCGA-PAAD uses GDC STAR-Counts
+raw counts (Path A / DESeq2), served from pre-assembled HF h5ad.
 
-Last commit: `eb99fad` — "Add tcga_paad manifest (UCSC Xena, log2(RSEM+1), gene symbols)"
+Last commit: `55be448` — "Add DESeq2 plain-language explanation to tcga_paad reporting_rules"
 
 ---
 
@@ -23,7 +23,7 @@ Last commit: `eb99fad` — "Add tcga_paad manifest (UCSC Xena, log2(RSEM+1), gen
 | `gse16515_mayo` | Affymetrix U133+2 (GPL570) | ✅ | ✅ | ❌ | normalized (linear scale), requires log2 before analysis |
 | `gse62165_jiang` | Affymetrix U219 (GPL13667) | ✅ | ✅ | ❌ | probe_id, requires collapse |
 | `gse71989_chen` | Affymetrix U133+2 (GPL570) | ✅ | ✅ | ❌ | probe_id, requires collapse |
-| `tcga_paad` | Illumina HiSeq (Xena HiSeqV2) | ✅ | ✅ (from real download) | ✅ (os_event/os_days via join) | gene_symbol, no collapse; Path B only |
+| `tcga_paad` | Illumina HiSeq (GDC STAR-Counts, hg38/GENCODE v36) | ✅ | ✅ (from real GDC download) | ✅ (os_event/os_days via join) | gene_symbol, raw_counts, Path A / DESeq2; HF-hosted h5ad |
 
 ---
 
@@ -58,13 +58,10 @@ DecoupleRpy_Agent imports this package directly.
 `test_registry.py` verifies manifests load against schema. No tests verify column names/values
 against live GEO data. The integration tests in DecoupleRpy_Agent serve this purpose instead.
 
-### 5. GDC STAR-Counts for TCGA-PAAD — HIGH PRIORITY (tracked in DecoupleRpy_Agent memory.md)
-Current `tcga_paad.yaml` uses Xena normalized data (Path B). Once a GDC raw-counts loader
-exists in DecoupleRpy_Agent, update this manifest:
-- `expression_source.type`: `url` → `gdc` (or new type)
-- `data_level`: `normalized` → `raw_counts`
-- `feature_id_type`: `gene_symbol` → `ensembl_gene_id` (GDC STAR-Counts use Ensembl IDs)
-- Enable Path A routing (DESeq2)
+### ~~5. GDC STAR-Counts for TCGA-PAAD~~ — RESOLVED (2026-06-06)
+`tcga_paad.yaml` now uses raw_counts from GDC STAR-Counts pipeline (Path A / DESeq2).
+Expression served from pre-assembled h5ad at `anni-voigt/pdac-research-data` on HF (49 MB).
+gene_symbol feature IDs; Ensembl IDs in adata.var['ensembl_id'].
 
 ### 6. TCGA-PAAD sample curation — MEDIUM PRIORITY (tracked in DecoupleRpy_Agent memory.md)
 18.9% of samples are non-PDAC (Knudsen 2019, PMC6357157). Currently documented only in
