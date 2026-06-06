@@ -180,9 +180,15 @@ metadata_columns:
 # ---------------------------------------------------------------------------
 
 reporting_rules:
-  - "State that expression values are raw integer counts (GDC STAR-Counts pipeline)."
-  - "State the total sample count and warn about the 18.9% non-PDAC contamination."
-  - "State that survival and prognostic analyses are unreliable without curation."
+  - "State that expression values are raw integer counts from the GDC STAR-Counts pipeline (hg38/GENCODE v36)."
+  - >
+    When reporting any DE or enrichment results, explain the method choice in plain language:
+    'DESeq2 was used because this dataset contains raw integer read counts from RNA sequencing.
+    DESeq2 is a statistical method designed specifically for count data — it models how counts
+    naturally vary across samples and produces reliable results. Simpler methods like limma or
+    t-test are not appropriate here and are blocked by the manifest.'
+  - "State the total sample count (183 total: 178 primary tumor, 4 normal, 1 metastatic) and warn about the 18.9% non-PDAC contamination."
+  - "State that survival and prognostic analyses are unreliable on the uncurated cohort."
   - "Cite Knudsen et al. 2019 (PMC6357157) when reporting survival results."
 
 refusal_rules:
