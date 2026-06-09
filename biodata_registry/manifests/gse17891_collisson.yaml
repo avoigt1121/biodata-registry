@@ -1,0 +1,169 @@
+# Collisson et al. 2011 — GSE17891
+# PDAC bulk microarray — original QM/exocrine/classical subtype paper
+#
+# Reference: Collisson EA et al. (2011) Nat Med 17:500-503
+#            https://doi.org/10.1038/nm.2344
+#
+# Platform: Affymetrix Human Genome U133 Plus 2.0 (GPL570)
+# 47 human samples: 27 microdissected tumor tissue + 20 PDAC cell lines
+# (Mouse samples on GPL8321 excluded.)
+# RMA-normalized log2 expression; value range -7.99 – 14.95.
+#
+# SUBTYPE NOTE: Collisson subtypes (quasi-mesenchymal, exocrine-like, classical)
+# are NOT deposited in GEO metadata. They are in Table S1 of the paper supplement.
+# Per quality policy, subtype labels are not encoded — see limitations.
+#
+# PATH B: data_level=log_expression → limma or ttest.
+# Do NOT apply DESeq2 or decoupler_preprocess_data.
+#
+# VALIDATED: assembled from GEO series matrix June 2026.
+# Feature IDs: Affymetrix GPL570 probe IDs; gene symbols in var['gene_symbol'].
+# Sample IDs: GSM accession IDs in obs.index.
+
+dataset_id: gse17891_collisson
+
+title: "Collisson et al. 2011 PDAC Bulk Microarray (GSE17891)"
+
+accession: GSE17891
+
+organism: human
+
+modality: bulk_microarray
+
+platform: "Affymetrix Human Genome U133 Plus 2.0 (GPL570)"
+
+data_level: log_expression
+# RMA-normalized log2 intensities (Affymetrix). Negative values possible for
+# near-zero signal probes. PATH B: use limma or ttest. Do NOT use DESeq2.
+
+feature_id_type: probe_id
+# var.index contains Affymetrix GPL570 probe IDs.
+# Gene symbols available in var['gene_symbol'] (45782/54675 probes mapped).
+# Probe collapse required before enrichment analysis.
+
+description: >
+  Pancreatic ductal adenocarcinoma (PDAC) microarray from Collisson et al. 2011
+  (Nature Medicine). Defines quasi-mesenchymal (QM), exocrine-like, and classical
+  PDAC subtypes. 47 human samples: 27 microdissected tumor tissue + 20 PDAC
+  cell lines. Mouse samples (GPL8321) excluded. Subtype labels from the paper
+  are not deposited in GEO and are not encoded in this manifest.
+
+publication:
+  doi: "10.1038/nm.2344"
+  authors: "Collisson EA, Sadanandam A, Olson P, et al."
+  year: 2011
+  journal: "Nature Medicine"
+  title: "Subtypes of pancreatic ductal adenocarcinoma and their differing responses to therapy"
+
+expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/gse17891_collisson.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad from GEO series matrix (47 human samples x 54675 probes,
+    float32 RMA log2 expression). Hosted at anni-voigt/pdac-research-data.
+    Mouse samples (GPL8321) excluded at assembly.
+
+metadata_source:
+  type: geo_series_matrix
+  embedded: true
+  note: >
+    GEO sample characteristics: tissue (tumor tissue samples only) and cell_line
+    (cell line samples only). Collisson subtype labels NOT in GEO — see limitations.
+
+sample_id_column: null
+# GSM accession IDs stored in obs.index.
+
+# ---------------------------------------------------------------------------
+# Metadata column definitions
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  tissue:
+    role: sample_origin
+    biological_grouping_allowed: true
+    allowed_values:
+      - "ductal adenocarcinoma tumor"
+      - ""
+    missing_values:
+      - ""
+    empty_value_meaning: >
+      Empty tissue means this sample is a cell line (annotated in the cell_line column).
+      27/47 samples have tissue annotation.
+    interpretation_warning: >
+      Use 'tissue' to filter to tumor tissue samples for DE analyses.
+      Cell line samples (empty tissue, non-empty cell_line) behave differently
+      from primary tumors and should be excluded from tumor-based analyses.
+    reporting_rules:
+      - "Report tissue group sizes from loaded data."
+      - "Note whether cell lines were included or excluded."
+    refusal_rules:
+      - "Refuse to include cell line samples in tumor-specific analyses without explicit user acknowledgment."
+
+  cell_line:
+    role: sample_origin
+    biological_grouping_allowed: false
+    interpretation_warning: >
+      cell_line identifies PDAC cell line samples. 20/47 samples are cell lines.
+      Do not use cell_line as a DE grouping variable; use it only to filter.
+    refusal_rules:
+      - "Refuse to use cell_line as a DE grouping variable."
+
+# ---------------------------------------------------------------------------
+# Dataset-level guardrails
+# ---------------------------------------------------------------------------
+
+reporting_rules:
+  - "State that expression values are RMA-normalized log2 intensities from Affymetrix GPL570."
+  - "State that only 27/47 samples are primary tumor tissue; 20 are PDAC cell lines."
+  - "State that Collisson subtype labels (QM/exocrine/classical) are not encoded in this h5ad
+    and were not deposited in GEO."
+  - "Probe collapse to gene symbols is required before enrichment or pathway analysis."
+
+refusal_rules:
+  - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
+  - "Refuse survival analysis — no survival data in this dataset."
+  - "Refuse to report Collisson subtype group memberships — subtype labels are not in this h5ad.
+    Direct users to the Collisson 2011 paper supplement (Table S1) for sample-level subtype assignments."
+  - "Refuse cell-line-inclusive DE analyses when user intent is to characterize primary tumors."
+
+# ---------------------------------------------------------------------------
+# Analysis configuration
+# ---------------------------------------------------------------------------
+
+group_columns:
+  - "tissue"
+
+feature_mapping:
+  requires_collapse: true
+  gene_symbol_column: "gene_symbol"
+  collapse_method: "mean"
+  multi_gene_policy: "first"
+
+survival_columns:
+  event_column: null
+  time_column: null
+
+default_contrasts:
+  # No meaningful DE contrast within this dataset alone — all 27 tissue samples
+  # are PDAC tumor (no normal tissue). Cell lines vs. tumor is possible but not
+  # a standard biologically interpretable analysis for pathway scoring.
+  # Subtype contrasts require Collisson 2011 supplement labels not in GEO.
+
+valid_workflows:
+  - microarray
+  - activity_scoring
+  - activity_stats
+
+limitations:
+  - "Collisson subtype labels (quasi-mesenchymal, exocrine-like, classical) are NOT deposited in
+    GEO metadata and are NOT encoded in this manifest. They must be sourced from Collisson 2011
+    Nature Medicine Table S1 and cannot be retrieved from this h5ad."
+  - "20/47 samples are PDAC cell lines, not primary tumor tissue. Filter to tumor tissue
+    (non-empty 'tissue' column) for tumor-specific analyses."
+  - "No normal tissue samples — tumor vs. normal DE is not possible."
+  - "No survival data available."
+  - "Probe IDs require collapse to gene symbols before enrichment analysis."
+  - "Value range includes negative values (-7.99 to 14.95) — expected for RMA normalization;
+    do not treat negatives as missing or invalid."
