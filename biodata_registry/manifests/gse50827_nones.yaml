@@ -1,0 +1,160 @@
+# Nones et al. 2014/2015 — GSE50827
+# PDAC bulk microarray — Illumina HumanHT-12 V4.0 with overall survival
+#
+# Reference: Nones K et al. (2014) Nat Commun 5:4670
+#            https://doi.org/10.1038/ncomms5670
+#            GEO: GSE50827 (ICGC Pancreas expression, 103 samples)
+#
+# Platform: Illumina HumanHT-12 V4.0 Expression BeadChip (GPL10558)
+# 103 primary PDAC tumor samples; all with specimen_type=primaryPDAC.
+# Log2-normalized expression; value range 2.62–15.17.
+# Overall survival available for 98/103 samples (95% → encoded).
+#
+# Source: rmoffitt/pdacR Nones_GEO_array.rds (gene symbols collapsed at assembly).
+#
+# PATH B: data_level=log_expression → limma or ttest.
+# Do NOT apply DESeq2 or decoupler_preprocess_data.
+#
+# VALIDATED: assembled from pdacR Nones_GEO_array.rds June 2026.
+# Feature IDs: HGNC gene symbols (mean-collapsed from probes at assembly).
+# Sample IDs: GEO GSM accession IDs in obs.index.
+
+dataset_id: gse50827_nones
+
+title: "Nones et al. 2014 PDAC Microarray with Overall Survival (GSE50827)"
+
+accession: GSE50827
+
+organism: human
+
+modality: bulk_microarray
+
+platform: "Illumina HumanHT-12 V4.0 Expression BeadChip (GPL10558)"
+
+data_level: log_expression
+# Log2-normalized Illumina expression intensities; value range 2.62–15.17.
+# PATH B: use limma or ttest. Do NOT use DESeq2 or decoupler_preprocess_data.
+
+feature_id_type: gene_symbol
+# var.index contains HGNC gene symbols (mean-collapsed from GPL10558 probes via pdacR).
+# 31324 gene symbols after collapse. No further probe collapse needed.
+
+description: >
+  Pancreatic ductal adenocarcinoma microarray from Nones et al. 2014 (Nature
+  Communications). 103 primary PDAC tumor samples. Illumina HumanHT-12 V4.0
+  platform, log2-normalized expression. Overall survival available for 98/103
+  samples. All samples are primary PDAC tumor tissue (ICGC cohort).
+  Source: pdacR v0.1.2. Note: some gene symbols may be Excel-corrupted
+  (date-format artifacts like '1-Dec', '1-Mar'); verify critical gene names.
+
+publication:
+  doi: "10.1038/ncomms5670"
+  authors: "Nones K, Waddell N, Song S, et al."
+  year: 2014
+  journal: "Nature Communications"
+  title: "Genome-wide DNA methylation patterns in pancreatic ductal adenocarcinoma reveal diagnostics, prognostics and epigenetic switches"
+
+expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/gse50827_nones.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad from pdacR Nones_GEO_array.rds (103 samples x 31324 genes,
+    float32 log2 expression). Hosted at anni-voigt/pdac-research-data.
+    Gene symbols mean-collapsed from GPL10558 probes.
+
+metadata_source:
+  type: embedded
+  embedded: true
+  note: >
+    Sample metadata from pdacR sampInfo. Key columns: survivalA (OS days),
+    censorA.1yes.0no (1=event/death, 0=censored/alive), specimen_type, geo_accession.
+
+sample_id_column: null
+# obs.index contains GEO GSM accession IDs (GSM123xxxx format).
+
+# ---------------------------------------------------------------------------
+# Metadata column definitions
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  survivalA:
+    role: clinical
+    biological_grouping_allowed: false
+    description: "Overall survival in days. 98/103 samples annotated."
+    refusal_rules:
+      - "Refuse to use survivalA as a DE grouping variable."
+
+  "censorA.1yes.0no":
+    role: clinical
+    biological_grouping_allowed: false
+    allowed_values:
+      - "1.0"
+      - "0.0"
+    missing_values:
+      - "nan"
+      - "NA"
+    description: >
+      Event indicator: 1.0 = event (death), 0.0 = censored (alive at last follow-up).
+      98/103 annotated (53 events, 45 censored). Use 1 as event value in Cox models.
+    refusal_rules:
+      - "Refuse to use censorA.1yes.0no as a DE grouping variable."
+
+  specimen_type:
+    role: sample_origin
+    biological_grouping_allowed: false
+    allowed_values:
+      - "primaryPDAC"
+    missing_values: []
+    description: "All 103 samples are primaryPDAC. No normal tissue present."
+
+# ---------------------------------------------------------------------------
+# Dataset-level guardrails
+# ---------------------------------------------------------------------------
+
+reporting_rules:
+  - "State that expression values are log2-normalized Illumina HumanHT-12 V4.0 intensities."
+  - "State that all 103 samples are primary PDAC tumors — no normal tissue."
+  - "Warn that some gene symbols may be Excel-corrupted (date artifacts)."
+
+refusal_rules:
+  - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
+  - "Refuse tumor vs. normal DE — no normal samples in this dataset."
+  - "Refuse survival analysis using only the 5 samples lacking survivalA data."
+
+# ---------------------------------------------------------------------------
+# Analysis configuration
+# ---------------------------------------------------------------------------
+
+group_columns: []
+
+feature_mapping:
+  requires_collapse: false
+  # Gene symbols already in var.index (mean-collapsed from GPL10558 probes by pdacR).
+
+survival_columns:
+  event_column: "censorA.1yes.0no"
+  time_column: "survivalA"
+  event_value: 1
+  time_unit: days
+  note: >
+    98/103 samples have OS data (95% coverage). censorA.1yes.0no: 1=death, 0=censored.
+    survivalA = overall survival in days.
+
+default_contrasts: []
+
+valid_workflows:
+  - microarray
+  - activity_scoring
+  - activity_stats
+  - survival
+
+limitations:
+  - "No subtype labels (Moffitt, Bailey, or Nones) in this dataset."
+  - "No normal tissue — tumor vs. normal DE is not possible."
+  - "5/103 samples have missing survival data."
+  - "Some gene symbol names may be Excel-corrupted date artifacts (e.g., '1-Dec' for DEC1,
+    '1-Mar' for MARC1). Verify critical gene names against Ensembl IDs before reporting."
+  - "Expression values are log2-normalized Illumina intensities; do not apply DESeq2 or re-normalize."
+  - "No pathological stage available (all stage values are NA in GEO metadata)."
