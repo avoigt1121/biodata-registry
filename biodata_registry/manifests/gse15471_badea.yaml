@@ -1,0 +1,169 @@
+# Badea et al. 2008 — GSE15471
+# PDAC bulk microarray dataset — matched tumor/normal pairs
+#
+# Reference: Badea L et al. (2008) Hepatology 48:1382-1395
+#            https://doi.org/10.1002/hep.22456
+#
+# Platform: Affymetrix Human Genome U133 Plus 2.0 (GPL570)
+# 39 matched tumor/adjacent-normal pairs (78 total samples)
+# RMA-normalized log2 expression; value range 2.14–14.79
+#
+# PATH B: data_level=log_expression → limma or ttest.
+# Do NOT apply DESeq2 or decoupler_preprocess_data.
+#
+# VALIDATED: assembled from GEO series matrix June 2026.
+# Feature IDs: Affymetrix probe IDs (GPL570); requires_collapse: true.
+# Sample IDs: GSM accession IDs in obs.index.
+
+dataset_id: gse15471_badea
+
+title: "Badea et al. 2008 PDAC Bulk Microarray (GSE15471)"
+
+accession: GSE15471
+
+organism: human
+
+modality: bulk_microarray
+
+platform: "Affymetrix Human Genome U133 Plus 2.0 (GPL570)"
+
+data_level: log_expression
+# RMA-normalized log2 intensities. Value range 2.14–14.79.
+# PATH B: use limma or ttest. Do NOT use DESeq2 or decoupler_preprocess_data.
+
+feature_id_type: probe_id
+# var.index contains Affymetrix GPL570 probe IDs.
+# Gene symbols available in var['gene_symbol'] (pre-mapped at assembly).
+# Probe-to-gene collapse required before enrichment analysis.
+
+description: >
+  Pancreatic ductal adenocarcinoma (PDAC) bulk microarray from Badea et al. 2008.
+  39 matched tumor/adjacent-normal pairs (78 samples total).
+  Affymetrix GPL570 platform, RMA-normalized log2 expression.
+  Normal samples are adjacent non-tumor pancreatic tissue, not healthy donor pancreas.
+
+publication:
+  doi: "10.1002/hep.22456"
+  authors: "Badea L, Herlea V, Dima SO, Dumitrascu T, Popescu I"
+  year: 2008
+  journal: "Hepatology"
+  title: >
+    Combined gene expression analysis of whole-tissue and microdissected pancreatic
+    ductal adenocarcinoma identifies genes specifically overexpressed in tumor epithelia
+
+expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/gse15471_badea.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad from GEO series matrix (78 samples x 54675 probes,
+    float32 RMA-normalized log2 expression). Hosted at anni-voigt/pdac-research-data.
+
+metadata_source:
+  type: geo_series_matrix
+  embedded: true
+  note: >
+    Sample characteristics extracted from GEO GSM metadata.
+    Key columns: sample (tumor/normal), patient (matched pair ID), title.
+
+sample_id_column: null
+# GSM accession IDs stored in obs.index.
+
+# ---------------------------------------------------------------------------
+# Metadata column definitions
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  sample:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "tumor"
+      - "normal"
+    missing_values: []
+    interpretation_warning: >
+      'normal' samples are adjacent non-tumor pancreatic tissue from the same
+      surgical resection as the paired tumor, NOT healthy donor pancreas.
+      The tumor-vs-normal contrast reflects tumor versus adjacent tissue; results
+      should not be generalized as tumor versus healthy baseline expression.
+      Compute group sizes from loaded data before analysis.
+    reporting_rules:
+      - "Report tumor and normal group sizes from loaded data."
+      - "State that 'normal' samples are adjacent non-tumor pancreatic tissue, not healthy donor tissue."
+      - "Note the matched-pair design when interpreting DE results."
+    refusal_rules:
+      - "Refuse to describe 'normal' samples as healthy pancreas or healthy baseline."
+      - "Refuse survival analysis — no survival data is available for this GEO series."
+
+  patient:
+    role: technical_metadata
+    biological_grouping_allowed: false
+    interpretation_warning: >
+      Patient ID for matched pair linkage only. Do not use as a DE grouping variable.
+      Paired design can be exploited with limma blocking; always match tumor-normal
+      pairs by patient ID for paired analyses.
+    refusal_rules:
+      - "Refuse to use patient as a DE grouping variable."
+
+# ---------------------------------------------------------------------------
+# Dataset-level guardrails
+# ---------------------------------------------------------------------------
+
+reporting_rules:
+  - "State that expression values are RMA-normalized log2 intensities from Affymetrix GPL570."
+  - "State that 'normal' samples are adjacent non-tumor pancreatic tissue, not healthy pancreas."
+  - "Report tumor vs. normal as a tumor-vs-adjacent contrast, not tumor vs. healthy baseline."
+  - "Note the 39 matched tumor-normal pairs design."
+  - "Probe collapse to gene symbols is required before enrichment or pathway analysis."
+
+refusal_rules:
+  - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
+  - "Refuse survival analysis — no survival data in this series."
+  - "Refuse to describe 'normal' samples as healthy pancreas."
+
+# ---------------------------------------------------------------------------
+# Analysis configuration
+# ---------------------------------------------------------------------------
+
+group_columns:
+  - "sample"
+
+feature_mapping:
+  requires_collapse: true
+  gene_symbol_column: "gene_symbol"
+  collapse_method: "mean"
+  multi_gene_policy: "first"
+  # GPL570 probe IDs mapped to gene symbols at assembly. Collapse to gene
+  # symbols before enrichment/activity analysis.
+
+survival_columns:
+  event_column: null
+  time_column: null
+
+default_contrasts:
+  - design_factor: "sample"
+    test_group: "tumor"
+    control_group: "normal"
+    subset_query: null
+    method: limma
+    fallback_method: ttest
+    note: >
+      Matched tumor-vs-adjacent contrast (39 pairs). limma is appropriate for
+      RMA-normalized log2 microarray data. For paired analysis, use patient
+      as blocking factor if supported.
+
+valid_workflows:
+  - microarray
+  - activity_scoring
+  - activity_stats
+
+limitations:
+  - "'Normal' samples are adjacent non-tumor pancreatic tissue from surgical resection,
+    not healthy donor pancreas. The contrast reflects tumor vs. adjacent tissue only;
+    do not extrapolate to healthy baseline expression."
+  - "Probe IDs require collapse to gene symbols before enrichment or pathway analysis."
+  - "No survival data available for this GEO series."
+  - "Expression values are RMA-normalized log2 intensities; do not apply DESeq2 or re-normalize."
+  - "GPL570 probe-to-gene mapping may include outdated annotations — verify critical findings
+    against current HGNC symbols."
