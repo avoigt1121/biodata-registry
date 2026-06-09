@@ -1,0 +1,236 @@
+# CPTAC Pancreatic Ductal Adenocarcinoma (CPTAC-PDA)
+# Bulk RNA-seq — RSEM TPM (gene-level), Path B / limma
+#
+# Source: CPTAC data portal via cptac Python package (broad source)
+#         GENCODE v34, GRCh38, RSEM transcript-level TPM collapsed to gene level (sum)
+# Clinical: CPTAC MSSM clinical + follow-up tables
+#
+# 131 samples (clinical + expression matched out of 140 clinical/193 expression).
+# All samples are primary PDAC tumors.
+#
+# SURVIVAL: OS (days) available for 130/131 (99% → encoded).
+#           Survival status: 1=dead, 0=alive.
+#           RFS available for only 53% → NOT encoded per quality policy.
+#
+# NORMALIZATION WARNING: CPTAC RNA-seq normalization is pipeline-specific
+# (GENCODE v34 RSEM). Values are NOT directly comparable to FPKM/TPM from
+# GEO or TCGA cohorts without batch correction. See limitations.
+#
+# PATH B: data_level=tpm → limma or ttest.
+# Do NOT apply DESeq2 or decoupler_preprocess_data.
+#
+# VALIDATED: assembled from cptac Python package June 2026.
+# Feature IDs: HGNC gene symbols (sum of transcript TPMs per gene).
+# Sample IDs: CPTAC participant IDs (C3L-.../C3N-... format).
+
+dataset_id: cptac_pda
+
+title: "CPTAC-PDA Pancreatic Ductal Adenocarcinoma RNA-seq"
+
+accession: CPTAC-PDA
+
+organism: human
+
+modality: bulk_rnaseq
+
+platform: "Illumina HiSeq (CPTAC harmonized RSEM TPM, GENCODE v34, GRCh38)"
+
+data_level: tpm
+# RSEM TPM values (gene-level, transcript TPMs summed per gene).
+# Value range 0–300100. PATH B: use limma or ttest.
+# Do NOT use DESeq2 or decoupler_preprocess_data on this dataset.
+
+feature_id_type: gene_symbol
+# var.index contains HGNC gene symbols (GENCODE v34 annotations).
+# Gene-level values obtained by summing transcript-level RSEM TPMs.
+# No probe collapse required.
+
+dataset_disclaimer: >
+  CPTAC-PDA: 131 primary PDAC tumor samples with matched RNA-seq and clinical data.
+  TPM values from CPTAC harmonized pipeline (GENCODE v34, RSEM) — not directly
+  comparable to TPM/FPKM from GEO or TCGA cohorts without batch correction.
+  Rich clinical annotation: histologic grade, tumor site, OS, margin status.
+  Cite Ellis et al. 2019 Cell (CPTAC PDAC proteogenomics) for data attribution.
+
+description: >
+  Pancreatic ductal adenocarcinoma RNA-seq from CPTAC-PDA proteogenomics study.
+  131 primary tumor samples with rich clinical metadata. RSEM TPM values from
+  CPTAC harmonized pipeline (Broad source, GENCODE v34). Overall survival
+  available for 130/131 samples. Histologic grade and tumor site annotated.
+  Data sourced via cptac Python package.
+
+publication:
+  doi: "10.1016/j.cell.2021.08.023"
+  authors: "Cao L, Huang C, Cui Zhou D, et al."
+  year: 2021
+  journal: "Cell"
+  title: "Proteogenomic characterization of pancreatic ductal adenocarcinoma"
+
+expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/cptac_pda.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad (131 samples x 59742 genes, float32 TPM).
+    Gene-level: transcript-level RSEM TPMs summed per gene symbol.
+    Hosted at anni-voigt/pdac-research-data.
+
+metadata_source:
+  type: embedded
+  embedded: true
+  note: >
+    CPTAC MSSM clinical and follow-up tables (121 columns after deduplication).
+    Key columns: histologic_grade, tumor_site, margin_status,
+    tumor_stage_pathological, 'Overall survival, days', 'Survival status (1, dead; 0, alive)',
+    sex, age. Source: cptac Python package, mssm clinical table.
+
+sample_id_column: null
+# obs.index contains CPTAC participant IDs (C3L-... / C3N-... format).
+
+# ---------------------------------------------------------------------------
+# Metadata column definitions
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  histologic_grade:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "G1 Well differentiated"
+      - "G2 Moderately differentiated"
+      - "G3 Poorly differentiated"
+      - "G4 Undifferentiated"
+    missing_values:
+      - "nan"
+      - "NA"
+      - ""
+    interpretation_warning: >
+      131 samples: G2 (94), G3 (30), G1 (7). G4 absent in matched subset.
+      Grade-based DE contrasts are well-powered for G2 vs G3 only.
+    reporting_rules:
+      - "Report grade group sizes from loaded data."
+    refusal_rules:
+      - "Refuse grade-based DE for groups with fewer than 5 samples."
+
+  tumor_site:
+    role: secondary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "Head"
+      - "Body"
+      - "Tail"
+      - "Other"
+    missing_values:
+      - "nan"
+      - "NA"
+    interpretation_warning: >
+      97/131 samples are head tumors. Body (12) and Tail (12) are small groups.
+      Do not run DE on Body or Tail as sole groups without acknowledging underpowered comparisons.
+
+  "Overall survival, days":
+    role: clinical
+    biological_grouping_allowed: false
+    description: "Overall survival in days from initial pathologic diagnosis. 130/131 samples."
+    refusal_rules:
+      - "Refuse to use OS as a DE grouping variable."
+
+  "Survival status (1, dead; 0, alive)":
+    role: clinical
+    biological_grouping_allowed: false
+    allowed_values:
+      - "1.0"
+      - "0.0"
+    missing_values:
+      - "nan"
+      - "NA"
+    description: "Vital status: 1=dead (event), 0=alive (censored). Paired with 'Overall survival, days'."
+    refusal_rules:
+      - "Refuse to use survival status as a DE grouping variable."
+
+  margin_status:
+    role: secondary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "Margins uninvolved by invasive carcinoma"
+      - "Margin(s) involved by invasive carcinoma"
+      - "Cannot be assessed"
+    missing_values:
+      - "nan"
+      - "NA"
+    interpretation_warning: >
+      Margin status: R0=93, R1=35, unassessable=10. Valid for R0 vs R1 comparisons.
+
+  sex:
+    role: clinical
+    biological_grouping_allowed: true
+    description: "Participant sex (Male/Female)."
+
+# ---------------------------------------------------------------------------
+# Dataset-level guardrails
+# ---------------------------------------------------------------------------
+
+reporting_rules:
+  - "State that expression values are RSEM TPM (CPTAC harmonized pipeline, GENCODE v34, GRCh38)."
+  - "State that 131 samples are matched clinical+expression (of 140 clinical / 193 expression total)."
+  - >
+    When reporting DE results: 'limma/ttest was used because this dataset contains
+    pre-normalized TPM expression values. DESeq2 requires raw integer counts and
+    is not appropriate for TPM data.'
+  - "Warn that CPTAC TPM values are not directly comparable to TPM from GEO or TCGA
+    without batch correction — normalization pipelines differ."
+
+refusal_rules:
+  - "Refuse DESeq2 or decoupler_preprocess_data — data_level is tpm, not raw_counts."
+  - "Refuse to compare CPTAC TPM values directly to GEO or TCGA TPM without batch correction."
+
+# ---------------------------------------------------------------------------
+# Analysis configuration
+# ---------------------------------------------------------------------------
+
+group_columns:
+  - "histologic_grade"
+  - "tumor_site"
+  - "margin_status"
+
+feature_mapping:
+  requires_collapse: false
+  # Gene symbols already in var.index (summed from transcript-level TPMs at assembly).
+
+survival_columns:
+  event_column: "Survival status (1, dead; 0, alive)"
+  time_column: "Overall survival, days"
+  event_value: 1
+  time_unit: days
+  note: >
+    OS available for 130/131 samples (99%). Survival status: 1=dead, 0=alive.
+    RFS ('Recurrence-free survival, days') NOT encoded — only 53% of samples
+    have data, below the 80% quality threshold.
+  secondary: null
+
+default_contrasts:
+  - design_factor: "histologic_grade"
+    test_group: "G3 Poorly differentiated"
+    control_group: "G2 Moderately differentiated"
+    subset_query: "histologic_grade in ['G2 Moderately differentiated', 'G3 Poorly differentiated']"
+    method: limma
+    fallback_method: ttest
+    note: >
+      G3 vs G2 is the best-powered grade contrast (30 vs 94 samples).
+      limma is appropriate for TPM data.
+
+valid_workflows:
+  - activity_scoring
+  - activity_stats
+  - survival
+
+limitations:
+  - "CPTAC TPM normalization (GENCODE v34, RSEM) is pipeline-specific and not directly
+    comparable to TPM/FPKM/RPKM from GEO datasets or TCGA. Batch correction required
+    for cross-cohort analyses."
+  - "131/193 expression samples have matched clinical data. 62 expression-only samples
+    are not included in this h5ad."
+  - "RFS ('Recurrence-free survival, days') not encoded — only 53% of samples have data."
+  - "G4 Undifferentiated samples are absent in the 131 matched subset."
+  - "Tumor site is heavily skewed toward Head (97/131) — Body/Tail comparisons are underpowered."
+  - "No Moffitt or Bailey subtype labels in the CPTAC clinical metadata."
