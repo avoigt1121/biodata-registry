@@ -1,0 +1,175 @@
+# GSE57495 — PDAC Microarray with Survival Data
+# Bulk microarray — single-channel log2 expression, Path B / limma
+#
+# 63 PDAC tumor samples; all with overall survival and vital status.
+# Appears in PDAC subtype benchmarking papers (e.g. Moffitt 2015).
+#
+# Platform: GPL15048 (Affymetrix Human Exon 1.0 ST, reannotated)
+# Value range: 1.46–15.06 (log2 expression)
+#
+# SURVIVAL NOTE: overall_survival_(month) and vital.status are in GEO metadata
+# with 100% sample coverage (63/63). Encoded as primary survival endpoint.
+#
+# PATH B: data_level=log_expression → limma or ttest.
+# Do NOT apply DESeq2 or decoupler_preprocess_data.
+#
+# VALIDATED: assembled from GEO series matrix June 2026.
+# Feature IDs: GPL15048 probe IDs; gene symbols in var['gene_symbol'].
+# Sample IDs: GSM accession IDs in obs.index.
+
+dataset_id: gse57495
+
+title: "GSE57495 PDAC Bulk Microarray with Overall Survival"
+
+accession: GSE57495
+
+organism: human
+
+modality: bulk_microarray
+
+platform: "GPL15048 (Affymetrix Human Exon 1.0 ST, reannotated)"
+
+data_level: log_expression
+# Single-channel log2 normalized intensities; value range 1.46–15.06.
+# PATH B: use limma or ttest. Do NOT use DESeq2 or decoupler_preprocess_data.
+
+feature_id_type: probe_id
+# var.index contains GPL15048 probe IDs.
+# Gene symbols available in var['gene_symbol'] (41024/60607 probes mapped).
+# Probe collapse to gene symbols required before enrichment analysis.
+
+description: >
+  Pancreatic ductal adenocarcinoma (PDAC) microarray dataset. 63 resectable PDAC
+  tumor samples with overall survival (months) and vital status. Pathologic stage
+  available (mostly Stage IIB/IIA). Dataset used in PDAC subtype benchmarking.
+  All samples are tumor; no normal tissue included.
+
+publication:
+  doi: null
+  note: >
+    GEO depositor not definitively linked to a single publication. Dataset cited
+    in PDAC subtype benchmarking contexts. Verify primary publication before citing.
+
+expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/gse57495.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad (63 samples x 60607 probes, float32 log2 expression).
+    Hosted at anni-voigt/pdac-research-data.
+
+metadata_source:
+  type: geo_series_matrix
+  embedded: true
+  note: >
+    Sample characteristics from GEO: overall_survival_(month), vital.status,
+    stage. All 63 samples have survival annotations.
+
+sample_id_column: null
+# GSM accession IDs stored in obs.index.
+
+# ---------------------------------------------------------------------------
+# Metadata column definitions
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  overall_survival_(month):
+    role: clinical
+    biological_grouping_allowed: false
+    description: "Overall survival in months from surgery/diagnosis. Continuous variable."
+    refusal_rules:
+      - "Refuse to use overall_survival_(month) as a DE grouping variable."
+
+  vital.status:
+    role: clinical
+    biological_grouping_allowed: false
+    allowed_values:
+      - "DEAD"
+      - "ALIVE"
+    missing_values: []
+    description: >
+      Vital status at last follow-up. DEAD = event (death); ALIVE = censored.
+      Use with overall_survival_(month) for survival analysis.
+    refusal_rules:
+      - "Refuse to use vital.status as a DE grouping variable."
+
+  stage:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "2B"
+      - "2A"
+      - "1B"
+      - "1"
+    missing_values:
+      - ""
+      - "NA"
+    interpretation_warning: >
+      Stage 2B and 2A account for 50/63 samples. Stages 1 and 1B have 13 samples
+      total. Verify group sizes before running stage-based DE analyses.
+    reporting_rules:
+      - "Report stage group sizes from loaded data."
+      - "Note that Stage 1/1B groups are small (n≤12)."
+
+# ---------------------------------------------------------------------------
+# Dataset-level guardrails
+# ---------------------------------------------------------------------------
+
+reporting_rules:
+  - "State that expression values are single-channel log2 intensities from GPL15048."
+  - "State that all 63 samples are PDAC tumors — no normal tissue present."
+  - "Probe collapse to gene symbols is required before enrichment or pathway analysis."
+
+refusal_rules:
+  - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
+  - "Refuse tumor vs. normal DE — no normal samples in this dataset."
+
+# ---------------------------------------------------------------------------
+# Analysis configuration
+# ---------------------------------------------------------------------------
+
+group_columns:
+  - "stage"
+
+feature_mapping:
+  requires_collapse: true
+  gene_symbol_column: "gene_symbol"
+  collapse_method: "mean"
+  multi_gene_policy: "first"
+
+survival_columns:
+  event_column: "vital.status"
+  time_column: "overall_survival_(month)"
+  event_value: "DEAD"
+  time_unit: months
+  note: >
+    63/63 samples have survival annotations (100% coverage).
+    DEAD = event; ALIVE = censored. Time in months.
+
+default_contrasts:
+  - design_factor: "stage"
+    test_group: "2B"
+    control_group: "2A"
+    subset_query: "stage in ['2A', '2B']"
+    method: limma
+    fallback_method: ttest
+    note: >
+      Stage IIB vs IIA is the most-populated contrast (33 vs 17 samples).
+      limma is appropriate for log2 expression data.
+
+valid_workflows:
+  - microarray
+  - activity_scoring
+  - activity_stats
+  - survival
+
+limitations:
+  - "No normal tissue samples — all 63 samples are PDAC tumors.
+    Tumor vs. normal analyses are not possible with this dataset alone."
+  - "Probe IDs require collapse to gene symbols before enrichment or pathway analysis.
+    41024/60607 probes have gene symbol annotations."
+  - "Stage 1 and 1B groups are small (combined n=13); stage-based DE is underpowered
+    outside Stage IIA/IIB."
+  - "Primary publication not definitively identified — verify before citing in papers."
+  - "Expression values are log2 intensities; do not apply DESeq2 or re-normalize."
