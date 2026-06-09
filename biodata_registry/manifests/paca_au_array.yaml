@@ -1,0 +1,201 @@
+# ICGC PACA-AU Microarray (Bailey 2016 / pdacR)
+# Bulk microarray — log2 normalized expression, Path B / limma
+#
+# Source: rmoffitt/pdacR R package (open access, CC BY 4.0)
+#         ICGC PACA-AU cohort (Australian pancreatic cancer study)
+#         Bailey et al. 2016 Nature — 4-subtype classification
+#
+# Expression: Illumina HumanHT-12 v4 microarray, log2 normalized (RMA-style).
+#             Gene symbols collapsed from probe-level data in pdacR.
+# Metadata: embedded in h5ad obs (ICGC PACA-AU clinical fields + pdacR annotations).
+#
+# PATH B: data_level=log_expression → limma or ttest.
+# Do NOT apply DESeq2 or decoupler_preprocess_data.
+#
+# VALIDATED: extracted from pdacR .rds files June 2026.
+# Feature IDs: HGNC gene symbols (already probe-collapsed by pdacR).
+# Sample IDs: ICGC specimen IDs (SA... format), stored in obs.index.
+
+dataset_id: paca_au_array
+
+title: "ICGC PACA-AU Pancreatic Cancer Microarray with Bailey 2016 Subtypes"
+
+accession: PACA-AU-array
+
+organism: human
+
+modality: bulk_microarray
+
+platform: "Illumina HumanHT-12 v4 Expression BeadChip (ICGC PACA-AU microarray)"
+
+data_level: log_expression
+# Log2-normalized microarray intensities (RMA-style, range ~1–14).
+# PATH B: use limma or ttest. Do NOT use DESeq2 or decoupler_preprocess_data.
+
+feature_id_type: gene_symbol
+# var.index contains HGNC gene symbols.
+# Probe-level data already collapsed to gene symbols in pdacR.
+# No additional probe collapse step needed.
+
+dataset_disclaimer: >
+  ICGC PACA-AU microarray cohort: 131 samples with mixed histology.
+  101/131 are classical PDAC; 14 IPMN, 7 adenosquamous, 9 other.
+  Use HistoSubtype column to filter for PDAC-only analysis.
+  42/131 samples lack Bailey subtype labels (low-purity or non-PDAC tumors).
+  Source: rmoffitt/pdacR (CC BY 4.0). Cite Bailey et al. 2016 Nature.
+
+description: >
+  ICGC PACA-AU pancreatic cancer microarray cohort, 131 primary tumor samples.
+  Illumina HumanHT-12 v4 microarray, log2-normalized expression (range ~1–14).
+  Bailey et al. 2016 four-subtype classification (squamous, pancreatic progenitor,
+  immunogenic, ADEX) in membership.ordered. 89/131 samples have subtype labels;
+  42 are unlabeled (empty string) due to low tumor purity or non-PDAC histology.
+  Clinical metadata includes AJCC stage, survival (survivalA days, censorA.0yes.1no),
+  tumor grade, KRAS mutation status, ESTIMATE immune/stromal scores.
+  Companion array dataset to paca_au_rnaseq (same cohort, different platform).
+
+publication:
+  doi: "10.1038/nature16965"
+  authors: "Bailey P et al."
+  year: 2016
+  journal: "Nature"
+  title: "Genomic analyses identify molecular subtypes of pancreatic cancer"
+
+expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/paca_au_array.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad from pdacR PACA_AU_array.rds (131 samples x 21167 genes,
+    float32 log2 expression). Hosted at anni-voigt/pdac-research-data on HuggingFace.
+
+metadata_source:
+  type: embedded
+  embedded: true
+  note: >
+    All clinical and subtype metadata embedded in h5ad obs at assembly time
+    from pdacR sampInfo. Key columns: membership.ordered (Bailey subtypes),
+    HistoSubtype, AJCC.Pathology.Stage, survivalA, censorA.0yes.1no,
+    Gender, Tumour.Grade, Tumour.Location, ESTIMATE scores.
+
+sample_id_column: null
+# obs.index contains ICGC specimen IDs (SA... format).
+
+# ---------------------------------------------------------------------------
+# Metadata column definitions
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  membership.ordered:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "Squamous"
+      - "Pancreatic Progenitor"
+      - "Immunogenic"
+      - "ADEX"
+      - ""
+    missing_values:
+      - ""
+    empty_value_meaning: >
+      Unlabeled: low tumor purity (qpure < 40%) or non-PDAC histology.
+      42/131 samples are unlabeled. Exclude empty-string samples before subtype comparisons.
+    interpretation_warning: >
+      Bailey 4-subtype model. Only 89/131 samples labeled. Use
+      membership.ordered != '' to filter to labeled samples before subtype DE.
+    reporting_rules:
+      - "Report subtype group sizes from loaded data."
+      - "Note that 42/131 samples are unlabeled and excluded from subtype analysis."
+    refusal_rules:
+      - "Refuse subtype analysis without filtering out unlabeled samples (empty string)."
+
+  HistoSubtype:
+    role: sample_origin
+    biological_grouping_allowed: true
+    interpretation_warning: >
+      Mixed histology cohort. 101/131 are classical PDAC; remainder are IPMN,
+      adenosquamous, acinar cell carcinoma, and other subtypes.
+      For PDAC-specific analyses, filter: HistoSubtype == 'Pancreatic Ductal Adenocarcinoma'.
+    refusal_rules:
+      - "Refuse claims of PDAC-specific results without confirming HistoSubtype filter was applied."
+
+  AJCC.Pathology.Stage:
+    role: primary_condition
+    biological_grouping_allowed: true
+    interpretation_warning: >
+      Stage distribution is uneven; most samples are Stage IIB.
+      Verify group sizes before stage-stratified DE.
+
+  survivalA:
+    role: clinical
+    biological_grouping_allowed: false
+    description: "Survival time in days (endpoint A). Paired with censorA.0yes.1no."
+
+  censorA.0yes.1no:
+    role: clinical
+    biological_grouping_allowed: false
+    description: >
+      Survival event indicator: 0 = censored (survived to survivalA without event),
+      1 = event occurred (death). Use 1 as the event value in Cox PH models.
+    refusal_rules:
+      - "Refuse to use censorA.0yes.1no as a DE grouping variable."
+
+# ---------------------------------------------------------------------------
+# Dataset-level guardrails
+# ---------------------------------------------------------------------------
+
+reporting_rules:
+  - "State that expression values are log2-normalized microarray intensities (Illumina HumanHT-12 v4)."
+  - "When reporting DE results, state: 'limma/ttest was used because this dataset contains pre-normalized log2 microarray data, not raw counts.'"
+  - "Cite Bailey et al. 2016 Nature (doi:10.1038/nature16965) for subtype annotations."
+  - "Report subtype group sizes from loaded data."
+  - "Note mixed histology: filter to HistoSubtype == 'Pancreatic Ductal Adenocarcinoma' for PDAC-specific analysis."
+
+refusal_rules:
+  - "Refuse DESeq2 or decoupler_preprocess_data — data_level is log_expression, not raw_counts."
+  - "Refuse subtype analysis without filtering out unlabeled samples (membership.ordered == '')."
+  - "Refuse probe collapse — gene symbols are already in var.index; no collapse is needed."
+
+group_columns:
+  - "membership.ordered"
+  - "HistoSubtype"
+  - "AJCC.Pathology.Stage"
+  - "Tumour.Grade"
+
+feature_mapping:
+  requires_collapse: false
+  # Gene symbols already in var.index (probe-collapsed by pdacR).
+
+survival_columns:
+  event_column: "censorA.0yes.1no"
+  time_column: "survivalA"
+  event_value: 1
+  time_unit: days
+  note: >
+    censorA.0yes.1no: 0 = censored, 1 = event (death). survivalA in days.
+    Standard Cox PH: event=1, censored=0.
+
+default_contrasts:
+  - design_factor: "membership.ordered"
+    test_group: "Squamous"
+    control_group: "Pancreatic Progenitor"
+    subset_query: "obs['membership.ordered'].isin(['Squamous', 'Pancreatic Progenitor'])"
+    method: limma
+    fallback_method: ttest
+    note: >
+      Most-powered contrast among labeled Bailey subtypes (24 vs 26 samples).
+      Confirm group sizes from loaded data before running.
+
+valid_workflows:
+  - microarray
+  - activity_scoring
+  - activity_stats
+  - survival
+
+limitations:
+  - "42/131 samples lack Bailey subtype labels (membership.ordered is empty string) — exclude before subtype analysis."
+  - "Mixed histology: 101/131 PDAC, 14 IPMN, 7 adenosquamous, 9 other — filter HistoSubtype for PDAC-only analysis."
+  - "Companion dataset to paca_au_rnaseq (same PACA-AU cohort, microarray platform)."
+  - "Survival endpoint definition (survivalA) assumed to be overall survival — verify from Bailey 2016 supplement if needed."
+  - "No tumor vs. normal comparison possible — cohort is tumor-only."

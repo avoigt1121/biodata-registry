@@ -1,0 +1,274 @@
+# Puleo et al. 2018 — PDAC Microarray (pdacR)
+# Bulk microarray — log-normalized expression, Path B / limma
+#
+# Source: rmoffitt/pdacR R package (open access, CC BY 4.0)
+#         Puleo et al. 2018 Gut — 5-subtype classification (WholeTumorClass)
+#
+# Expression: Affymetrix HuEx 1.0 ST microarray, normalized expression.
+#             Gene symbols collapsed from probe-level data in pdacR.
+#             Value range: 0.32–73.9 (non-standard for RMA log2; reflect
+#             custom normalization from Puleo et al. — use Path B regardless).
+# Metadata: embedded in h5ad obs.
+#
+# PATH B: data_level=log_expression → limma or ttest.
+# Do NOT apply DESeq2 or decoupler_preprocess_data.
+#
+# VALIDATED: extracted from pdacR .rds files June 2026.
+# Feature IDs: HGNC gene symbols (probe-collapsed by pdacR).
+# Sample IDs: internal Puleo IDs (PANC... format), stored in obs.index.
+# NOTE: Value range 0.32–73.9 may reflect custom normalization rather than
+# standard log2 RMA. Data should not be back-transformed or re-normalized.
+
+dataset_id: puleo_2018
+
+title: "Puleo et al. 2018 PDAC Bulk Microarray with 5-Subtype Classification"
+
+accession: puleo_2018
+
+organism: human
+
+modality: bulk_microarray
+
+platform: "Affymetrix Human Exon 1.0 ST Array (HuEx 1.0 ST)"
+
+data_level: log_expression
+# Pre-normalized expression from pdacR (Affymetrix HuEx 1.0 ST).
+# Value range 0.32–73.9 reflects Puleo custom normalization (not standard log2 RMA).
+# PATH B: use limma or ttest. Do NOT use DESeq2 or decoupler_preprocess_data.
+# Do not back-transform or re-normalize — use values as-is.
+
+feature_id_type: gene_symbol
+# var.index contains HGNC gene symbols.
+# Probe-level data already collapsed to gene symbols by pdacR.
+# No additional probe collapse step needed.
+
+dataset_disclaimer: >
+  Puleo 2018 cohort: 309 PDAC samples, all with WholeTumorClass subtype labels.
+  Largest single microarray PDAC cohort in this registry.
+  Expression values have a non-standard range (0.32–73.9) from custom normalization —
+  treat as pre-normalized log-scale; do not re-normalize.
+  Source: rmoffitt/pdacR (CC BY 4.0). Cite Puleo et al. 2018 Gut.
+
+description: >
+  Pancreatic ductal adenocarcinoma (PDAC) microarray cohort from Puleo et al. 2018.
+  309 FFPE tumor samples (French multi-center study), Affymetrix HuEx 1.0 ST.
+  All samples have Puleo 5-subtype labels (WholeTumorClass): Desmoplastic (80),
+  PureClassical (90), StromaActivated (70), ImmuneClassical (35), PureBasal-like (34).
+  Moffitt-style HighTumorCellClass also available (classical/basal-like, 78/309 labeled).
+  Two survival endpoints: survivalA + censorA (primary), survivalB + censorB (secondary).
+  Clinical metadata includes KRAS/TP53/CDKN2a mutation status, TNM grade,
+  tumor grade, resection margin, clinical center.
+
+publication:
+  doi: "10.1136/gutjnl-2017-314588"
+  authors: "Puleo F et al."
+  year: 2018
+  journal: "Gut"
+  title: "Stratification of Pancreatic Ductal Adenocarcinomas Based on Tumor and Microenvironment Features"
+
+expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/puleo_2018.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad from pdacR Puleo_array.rds (309 samples x 17601 genes,
+    float32 normalized expression). Hosted at anni-voigt/pdac-research-data.
+
+metadata_source:
+  type: embedded
+  embedded: true
+  note: >
+    All clinical and subtype metadata embedded in h5ad obs at assembly time
+    from pdacR sampInfo. Key columns: WholeTumorClass (5-subtype), HighTumorCellClass
+    (Moffitt-style), survivalA, censorA.0yes.1no, survivalB, censorB.0yes.1no,
+    KRAS.mut.1yes.0no, p53.mut.1yes.0no, CDKN2a.mut.1yes.0no,
+    Resection.margin, TNM.tumor.grade, Tumor.grade, Clinical.center.
+
+sample_id_column: null
+# obs.index contains internal Puleo study IDs (PANC... format).
+
+# ---------------------------------------------------------------------------
+# Metadata column definitions
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  WholeTumorClass:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "PureClassical"
+      - "Desmoplastic"
+      - "StromaActivated"
+      - "ImmuneClassical"
+      - "PureBasal-like"
+    missing_values: []
+    interpretation_warning: >
+      Puleo 5-subtype model integrating tumor epithelium and microenvironment.
+      All 309 samples are labeled. Subtype definitions from Puleo et al. 2018 Gut.
+      PureClassical and PureBasal-like correspond to Moffitt classical/basal-like
+      tumor intrinsic subtypes; Desmoplastic/StromaActivated/ImmuneClassical
+      reflect TME context.
+    reporting_rules:
+      - "Report subtype group sizes from loaded data."
+      - "Cite Puleo et al. 2018 (doi:10.1136/gutjnl-2017-314588) for subtype definitions."
+
+  HighTumorCellClass:
+    role: secondary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "classical"
+      - "basal-like"
+      - ""
+    missing_values:
+      - ""
+    empty_value_meaning: >
+      231/309 samples have no HighTumorCellClass label. Only 78 samples are labeled
+      (56 classical, 22 basal-like). This is a Moffitt-style tumor-intrinsic subtype;
+      unlabeled samples may have mixed or unclear subtype signal.
+    interpretation_warning: >
+      Only 78/309 samples have HighTumorCellClass labels. Use WholeTumorClass
+      (all 309 labeled) for full-cohort subtype analyses.
+    refusal_rules:
+      - "Refuse HighTumorCellClass subtype analysis without filtering to labeled samples (non-empty)."
+
+  survivalA:
+    role: clinical
+    biological_grouping_allowed: false
+    description: "Primary survival endpoint, time in days. Paired with censorA.0yes.1no."
+
+  censorA.0yes.1no:
+    role: clinical
+    biological_grouping_allowed: false
+    description: >
+      Event indicator for survivalA: 0 = censored, 1 = event (death).
+      Use 1 as the event value in Cox PH models.
+    refusal_rules:
+      - "Refuse to use censorA.0yes.1no as a DE grouping variable."
+
+  survivalB:
+    role: clinical
+    biological_grouping_allowed: false
+    description: "Secondary survival endpoint, time in days. Paired with censorB.0yes.1no. Verify endpoint definition from Puleo 2018 supplement."
+
+  censorB.0yes.1no:
+    role: clinical
+    biological_grouping_allowed: false
+    description: >
+      Event indicator for survivalB: 0 = censored, 1 = event.
+      Use 1 as the event value. Verify endpoint definition (OS vs DFS) from paper.
+
+  KRAS.mut.1yes.0no:
+    role: clinical
+    biological_grouping_allowed: true
+    allowed_values:
+      - "0.0"
+      - "1.0"
+      - ""
+    description: "KRAS mutation status: 1 = mutated, 0 = wild-type, empty = unknown."
+
+  p53.mut.1yes.0no:
+    role: clinical
+    biological_grouping_allowed: true
+    allowed_values:
+      - "0.0"
+      - "1.0"
+      - ""
+    description: "TP53 mutation status: 1 = mutated, 0 = wild-type, empty = unknown."
+
+  CDKN2a.mut.1yes.0no:
+    role: clinical
+    biological_grouping_allowed: true
+    allowed_values:
+      - "0.0"
+      - "1.0"
+      - ""
+    description: "CDKN2a mutation status: 1 = mutated, 0 = wild-type, empty = unknown."
+
+  Resection.margin:
+    role: clinical
+    biological_grouping_allowed: true
+    allowed_values:
+      - "R0"
+      - "R1"
+    description: "Surgical resection margin status. R0 = clear margins, R1 = microscopically involved."
+
+  Tumor.grade:
+    role: primary_condition
+    biological_grouping_allowed: true
+    description: "Histological tumor grade (G1/G2/G3)."
+
+  Clinical.center:
+    role: batch
+    biological_grouping_allowed: false
+    description: "Recruiting clinical center. Multi-center study — potential batch effects."
+    interpretation_warning: >
+      Multi-center study. Consider clinical center as a potential confound in DE analyses.
+      Batch correction may be warranted for cross-center comparisons.
+
+# ---------------------------------------------------------------------------
+# Dataset-level guardrails
+# ---------------------------------------------------------------------------
+
+reporting_rules:
+  - "State that expression values are pre-normalized from Affymetrix HuEx 1.0 ST microarray (Puleo custom normalization, non-standard range 0.32–73.9)."
+  - "When reporting DE results, state: 'limma/ttest was used because this dataset contains pre-normalized expression data, not raw counts.'"
+  - "Cite Puleo et al. 2018 Gut (doi:10.1136/gutjnl-2017-314588) for subtype definitions."
+  - "Report subtype group sizes from loaded data."
+  - "Note multi-center origin — Clinical.center may contribute batch effects."
+
+refusal_rules:
+  - "Refuse DESeq2 or decoupler_preprocess_data — data_level is log_expression, not raw_counts."
+  - "Refuse HighTumorCellClass subtype analysis without filtering to labeled samples (78/309)."
+  - "Refuse probe collapse — gene symbols are already in var.index."
+  - "Refuse back-transformation or re-normalization of expression values."
+
+group_columns:
+  - "WholeTumorClass"
+  - "HighTumorCellClass"
+  - "Resection.margin"
+  - "Tumor.grade"
+  - "KRAS.mut.1yes.0no"
+
+feature_mapping:
+  requires_collapse: false
+  # Gene symbols already in var.index (probe-collapsed by pdacR).
+
+survival_columns:
+  event_column: "censorA.0yes.1no"
+  time_column: "survivalA"
+  event_value: 1
+  time_unit: days
+  secondary:
+    event_column: "censorB.0yes.1no"
+    time_column: "survivalB"
+    event_value: 1
+    time_unit: days
+  note: >
+    Two survival endpoints available. survivalA/censorA is the primary endpoint;
+    survivalB/censorB is secondary. Exact OS vs DFS definitions should be verified
+    from Puleo et al. 2018 Gut supplement.
+
+default_contrasts:
+  - design_factor: "WholeTumorClass"
+    test_group: "PureBasal-like"
+    control_group: "PureClassical"
+    subset_query: "obs['WholeTumorClass'].isin(['PureBasal-like', 'PureClassical'])"
+    method: limma
+    fallback_method: ttest
+    note: >
+      Tumor-intrinsic contrast: 34 PureBasal-like vs 90 PureClassical.
+      Analogous to Moffitt basal vs classical comparison.
+
+valid_workflows:
+  - microarray
+  - activity_scoring
+  - activity_stats
+  - survival
+
+limitations:
+  - "Expression value range (0.32–73.9) is non-standard for log2 RMA; reflects Puleo custom normalization. Do not back-transform."
+  - "Only 78/309 samples have HighTumorCellClass labels; use WholeTumorClass for full-cohort analyses."
+  - "Multi-center study (French clinical centers) — potential batch effects not corrected."
+  - "FFPE tissue source — may affect expression quality relative to fresh-frozen cohorts."
+  - "Survival endpoint definitions (survivalA vs survivalB) should be verified from Puleo 2018 Gut supplement."
