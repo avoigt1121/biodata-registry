@@ -1,0 +1,160 @@
+# Stratford et al. 2010 — GSE21501
+# PDAC bulk microarray — two-color Agilent array, log ratio values
+#
+# Reference: Stratford JK et al. (2010) PLoS Med 7:e1000307
+#            https://doi.org/10.1371/journal.pmed.1000307
+#
+# Platform: Agilent-014850 Whole Human Genome Microarray 4x44K G4112F (GPL4133)
+# 132 samples: 101 tumor, 30 untyped (likely normal/blood), 1 IPMN
+# Values are log2 ratios (test/reference); reference = Stratagene Universal Human Reference RNA.
+# Value range: -11.33 – 11.67 (log ratio; negative values are expected).
+#
+# SURVIVAL NOTE: Survival data is described in the paper but is NOT deposited
+# in the GEO series metadata. Not encoded here — see limitations.
+#
+# PATH B: data_level=log_ratio → limma or ttest.
+# Do NOT apply DESeq2 or decoupler_preprocess_data.
+#
+# VALIDATED: assembled from GEO series matrix June 2026.
+# Feature IDs: Agilent GPL4133 probe IDs; requires_collapse: true.
+# Sample IDs: GSM accession IDs in obs.index.
+
+dataset_id: gse21501_stratford
+
+title: "Stratford et al. 2010 PDAC Bulk Microarray (GSE21501)"
+
+accession: GSE21501
+
+organism: human
+
+modality: bulk_microarray
+
+platform: "Agilent-014850 Whole Human Genome 4x44K G4112F (GPL4133)"
+
+data_level: log_ratio
+# Log2 ratio of test/reference channel (Stratagene Universal Human Reference RNA).
+# Negative values are expected and normal for this design.
+# PATH B: use limma or ttest. Do NOT use DESeq2 or decoupler_preprocess_data.
+# Do not back-transform or re-normalize.
+
+feature_id_type: gene_symbol
+# var.index contains HGNC gene symbols (probe-collapsed from GPL4133 at assembly,
+# mean across duplicate probes). No additional probe collapse step needed.
+
+description: >
+  Pancreatic ductal adenocarcinoma (PDAC) microarray from Stratford et al. 2010
+  (PLoS Medicine). 132 samples on Agilent two-color platform, with Stratagene
+  Universal Human Reference RNA as the common reference channel.
+  101 tumor samples, 30 untyped samples (likely normal/blood/reference), 1 IPMN.
+  Values are log2 ratios; probe collapse to gene symbols required before analysis.
+  Survival data described in the paper is not deposited in GEO.
+
+publication:
+  doi: "10.1371/journal.pmed.1000307"
+  authors: "Stratford JK, Bentrem DJ, Anderson JM, et al."
+  year: 2010
+  journal: "PLoS Medicine"
+  title: "A Six-Gene Signature Predicts Survival of Patients with Resectable Pancreatic Ductal Adenocarcinoma"
+
+expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/gse21501_stratford.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad (132 samples x 19749 genes, float32 log2 ratio values).
+    Gene symbols collapsed from GPL4133 probe IDs (mean across duplicates).
+    Hosted at anni-voigt/pdac-research-data.
+
+metadata_source:
+  type: geo_series_matrix
+  embedded: true
+  note: >
+    Sample tissue type inferred from GEO title field (T suffix = tumor; 30 samples
+    have ambiguous titles and are labelled 'unknown'). No survival metadata in GEO.
+    Survival data requires paper supplement (PLoS Med 2010, Table S2).
+
+sample_id_column: null
+# GSM accession IDs stored in obs.index.
+
+# ---------------------------------------------------------------------------
+# Metadata column definitions
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  tissue_type:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "tumor"
+      - "unknown"
+      - "IPMN"
+    missing_values: []
+    interpretation_warning: >
+      'tissue_type' was inferred from sample title patterns (T suffix = tumor).
+      30 samples have ambiguous titles and are labelled 'unknown' — these may be
+      normal tissue, blood samples, or reference pools. Do not include 'unknown'
+      samples in tumor-specific analyses without manual curation.
+      1 IPMN sample present; exclude from PDAC-specific analyses.
+      Compute group sizes from loaded data before analysis.
+    reporting_rules:
+      - "Report group sizes from loaded data."
+      - "State that tissue_type was inferred from sample title, not GEO clinical metadata."
+      - "Exclude 'unknown' and 'IPMN' samples from PDAC-specific analyses unless intent is exploratory."
+    refusal_rules:
+      - "Refuse survival analysis — survival data is not available in this h5ad."
+      - "Refuse to include 'IPMN' samples in PDAC-specific analyses without explicit user intent."
+
+# ---------------------------------------------------------------------------
+# Dataset-level guardrails
+# ---------------------------------------------------------------------------
+
+reporting_rules:
+  - "State that expression values are log2 ratios relative to Stratagene Universal Human Reference RNA."
+  - "State that tissue_type was inferred from GEO sample titles, not deposited clinical metadata."
+  - "Note 30 samples of unknown tissue type and 1 IPMN sample."
+  - "Note that survival data from the paper (6-gene signature) is not available in this h5ad."
+
+refusal_rules:
+  - "Refuse DESeq2 — data_level is log_ratio, not raw_counts."
+  - "Refuse survival analysis — survival endpoints are not deposited in GEO and not in the h5ad."
+  - "Refuse to include 'unknown' samples in PDAC tumor analyses without explicit user acknowledgment."
+
+# ---------------------------------------------------------------------------
+# Analysis configuration
+# ---------------------------------------------------------------------------
+
+group_columns:
+  - "tissue_type"
+
+feature_mapping:
+  requires_collapse: false
+  # Gene symbols already in var.index (collapsed from GPL4133 at assembly).
+
+survival_columns:
+  event_column: null
+  time_column: null
+  note: >
+    Survival data (OS, DFS) from the paper (Stratford 2010 PLoS Med Table S2) is
+    not deposited in the GEO series metadata. Not available in this h5ad.
+
+default_contrasts:
+  # No default contrast defined: 'unknown' samples (35/132) have unconfirmed tissue
+  # identity; a tumor-vs-unknown DE is not biologically meaningful without manual curation.
+  # To run DE, first manually curate 'unknown' sample types from the paper supplement.
+
+valid_workflows:
+  - microarray
+  - activity_scoring
+  - activity_stats
+
+limitations:
+  - "Tissue type ('tissue_type') was inferred from GEO sample title patterns, not deposited clinical metadata.
+    30/132 samples have ambiguous titles labelled 'unknown' — tissue identity unconfirmed."
+  - "Survival data described in Stratford 2010 (6-gene OS/DFS signature) is not deposited in GEO
+    and is not available in this h5ad. Do not run survival analysis on this dataset."
+  - "1 IPMN sample present — exclude from PDAC-specific analyses."
+  - "Values are log2 ratios relative to a common reference (Stratagene Universal Human Reference RNA).
+    Negative values are expected. Do not back-transform or re-normalize."
+  - "Gene symbols in var.index were collapsed from GPL4133 probes at assembly (mean per gene).
+    Some outdated HGNC symbols may be present — verify critical findings against current symbols."
