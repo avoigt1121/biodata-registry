@@ -1,0 +1,258 @@
+# ICGC PACA-CA — Canadian Pancreatic Cancer Study RNA-seq
+# Bulk RNA-seq — RSEM expected_counts (rounded to int32), Path A / DESeq2
+#
+# Source: rmoffitt/pdacR R package (v0.1.2, open access, CC BY 4.0)
+#         ICGC PACA-CA cohort (Canadian pancreatic cancer study)
+#
+# Expression: RSEM expected_counts rounded to int32 for DESeq2 compatibility.
+# 262 samples: 195 primary tumor (175 + 20), 40 cell lines, 13 metastatic,
+#              11 PDX xenograft, 3 lymph node metastases.
+# Survival: survivalA/censorA available for 213/262 samples (81% → encoded).
+#           survivalB available for 122/262 samples (47% → NOT encoded).
+#
+# NO SUBTYPE LABELS: Moffitt/Bailey subtypes are NOT in the PACA-CA metadata
+# from pdacR. Subtype classification requires a separate analysis step.
+#
+# PATH A: data_level=raw_counts → DESeq2.
+# Do NOT apply limma/ttest or skip decoupler_preprocess_data.
+#
+# ICGC DATA NOTE: Exact ICGC data release version not available from pdacR.
+# Source is pdacR v0.1.2; cite ICGC PACA-CA consortium for attribution.
+#
+# VALIDATED: assembled from pdacR PACA_CA_seq.rds June 2026.
+# Feature IDs: Ensembl gene IDs in var.index; HGNC symbols in var['SYMBOL'].
+# Sample IDs: ICGC specimen IDs (SP... format), stored in obs.index.
+
+dataset_id: paca_ca_rnaseq
+
+title: "ICGC PACA-CA Pancreatic Cancer RNA-seq (Canadian Cohort)"
+
+accession: PACA-CA
+
+organism: human
+
+modality: bulk_rnaseq
+
+platform: "Illumina HiSeq (ICGC PACA-CA RNA-seq, RSEM expected_counts)"
+
+data_level: raw_counts
+# RSEM expected_counts rounded to int32.
+# PATH A: use DESeq2. Run decoupler_preprocess_data before DE.
+# Do NOT use limma, ttest, or skip preprocessing.
+
+feature_id_type: ensembl_gene_id
+# var.index contains Ensembl gene IDs (e.g. ENSG00000000003).
+# HGNC gene symbols available in var['SYMBOL'].
+# No probe collapse required; Ensembl IDs are feature-level.
+
+dataset_disclaimer: >
+  ICGC PACA-CA cohort: 262 samples including primary tumor, cell lines,
+  metastatic, and PDX xenograft samples. Filter to primary tumor
+  (specimen_type contains 'Primary tumour') for tumor-specific analyses.
+  No Moffitt or Bailey subtype labels in this dataset — subtype
+  classification requires a separate analysis step.
+  Source: rmoffitt/pdacR v0.1.2 (CC BY 4.0). ICGC PACA-CA.
+
+description: >
+  Pancreatic ductal adenocarcinoma bulk RNA-seq from the ICGC Canadian Pancreatic
+  Cancer cohort (PACA-CA). 262 samples including primary tumor tissue, PDAC cell
+  lines, metastatic tumors, and PDX xenografts. RSEM expected_counts rounded to
+  int32 for DESeq2. Survival data available for ~81% of samples (survivalA).
+  No Moffitt or Bailey subtype annotations. Source: pdacR v0.1.2.
+
+publication:
+  doi: null
+  note: >
+    ICGC PACA-CA data. Exact publication depends on analysis context.
+    Cite the ICGC PACA-CA consortium and pdacR (rmoffitt/pdacR) for data source.
+    Bailey et al. 2016 Nature used related PACA-AU data for subtype definitions.
+
+expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/paca_ca_rnaseq.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad from pdacR PACA_CA_seq.rds (262 samples x 65802 genes,
+    int32 RSEM expected_counts). Hosted at anni-voigt/pdac-research-data.
+    Ensembl IDs in var.index; gene symbols in var['SYMBOL'].
+
+metadata_source:
+  type: embedded
+  embedded: true
+  note: >
+    ICGC clinical metadata from pdacR sampInfo. Key fields: specimen_type
+    (tumor/cell line/metastatic/PDX), donor_vital_status, donor_survival_time,
+    survivalA/censorA (81% coverage), survivalB/censorB (47% — not encoded),
+    donor_tumour_stage_at_diagnosis, donor_sex.
+
+sample_id_column: null
+# obs.index contains ICGC specimen IDs (SP... format).
+
+# ---------------------------------------------------------------------------
+# Metadata column definitions
+# ---------------------------------------------------------------------------
+
+metadata_columns:
+
+  specimen_type:
+    role: sample_origin
+    biological_grouping_allowed: true
+    allowed_values:
+      - "Primary tumour - other"
+      - "Primary tumour - solid tissue"
+      - "Cell line - derived from tumour"
+      - "Metastatic tumour - metastasis to distant location"
+      - "Xenograft - derived from primary tumour"
+      - "Metastatic tumour - lymph node"
+    missing_values: []
+    interpretation_warning: >
+      Filter to 'Primary tumour' specimen types for tumor-specific analyses.
+      Cell lines (40), metastatic (16), and PDX (11) samples behave differently
+      from primary tumors. Do not mix specimen types without explicit intent.
+    reporting_rules:
+      - "Report specimen type breakdown from loaded data."
+      - "State which specimen types are included in any analysis."
+    refusal_rules:
+      - "Refuse to include cell lines in tumor DE analyses without explicit user acknowledgment."
+      - "Refuse to include metastatic or PDX samples in primary tumor analyses."
+
+  donor_vital_status:
+    role: clinical
+    biological_grouping_allowed: false
+    allowed_values:
+      - "deceased"
+      - "alive"
+      - "nan"
+    missing_values:
+      - "nan"
+      - "NA"
+      - ""
+    description: "Vital status at last follow-up: deceased=event, alive=censored. 37/262 missing."
+    refusal_rules:
+      - "Refuse to use donor_vital_status as a DE grouping variable."
+
+  survivalA:
+    role: clinical
+    biological_grouping_allowed: false
+    description: >
+      Primary survival endpoint, time in days. Paired with censorA.0yes.1no.
+      213/262 samples have data (81% coverage).
+
+  "censorA.0yes.1no":
+    role: clinical
+    biological_grouping_allowed: false
+    description: >
+      Event indicator for survivalA: 1.0 = event (death), 0.0 = censored.
+      213/262 samples have data. Use 1 as event value in Cox models.
+    refusal_rules:
+      - "Refuse to use censorA.0yes.1no as a DE grouping variable."
+
+  donor_tumour_stage_at_diagnosis:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "IIB"
+      - "IB"
+      - "IIA"
+      - "IB or IIB"
+      - "IA"
+      - "III"
+      - "II"
+      - "I-III"
+      - "I - III"
+      - "T3N1Mx"
+      - "T3N0M0"
+      - "TxNxMx"
+      - "Unknown"
+    missing_values:
+      - "nan"
+      - "NA"
+      - ""
+    interpretation_warning: >
+      87/262 samples have missing stage. Stage groups vary in size; verify
+      counts from loaded data. 'IB or IIB' is ambiguous — exclude from
+      precise stage contrasts.
+
+  donor_sex:
+    role: clinical
+    biological_grouping_allowed: true
+    allowed_values:
+      - "male"
+      - "female"
+    missing_values:
+      - "nan"
+      - "NA"
+    description: "Donor sex. 37/262 missing."
+
+# ---------------------------------------------------------------------------
+# Dataset-level guardrails
+# ---------------------------------------------------------------------------
+
+reporting_rules:
+  - "State that expression values are RSEM expected_counts rounded to int32."
+  - "Report specimen type breakdown — not all 262 samples are primary tumors."
+  - "State that Moffitt and Bailey subtype labels are not in this dataset."
+  - "For survival analysis, filter to primary tumor samples with survivalA data."
+  - >
+    When reporting DE results: 'DESeq2 was used because this dataset contains
+    RSEM expected_counts (count-level RNA-seq data). DESeq2 models count
+    dispersion and produces reliable results for this data type.'
+
+refusal_rules:
+  - "Refuse limma or ttest — data_level is raw_counts; DESeq2 required."
+  - "Refuse to mix specimen types without explicit user acknowledgment."
+  - "Refuse to report Moffitt or Bailey subtypes for this dataset — not available."
+  - "Refuse survival analysis without filtering to primary tumor samples."
+
+# ---------------------------------------------------------------------------
+# Analysis configuration
+# ---------------------------------------------------------------------------
+
+group_columns:
+  - "specimen_type"
+  - "donor_tumour_stage_at_diagnosis"
+  - "donor_sex"
+
+feature_mapping:
+  requires_collapse: false
+  # Ensembl gene IDs in var.index; HGNC symbols in var['SYMBOL'].
+  # No probe collapse needed.
+
+survival_columns:
+  event_column: "censorA.0yes.1no"
+  time_column: "survivalA"
+  event_value: 1
+  time_unit: days
+  note: >
+    survivalA/censorA available for 213/262 samples (81%).
+    censorA.0yes.1no: 1.0=deceased, 0.0=alive/censored.
+    survivalB/censorB NOT encoded — only 47% of samples have data.
+    Filter to primary tumor samples before survival analysis.
+  secondary: null
+
+default_contrasts:
+  - design_factor: "specimen_type"
+    test_group: "Primary tumour - other"
+    control_group: "Cell line - derived from tumour"
+    subset_query: "specimen_type in ['Primary tumour - other', 'Cell line - derived from tumour']"
+    method: deseq2
+    note: >
+      Exploratory contrast; primary tumor vs. PDAC cell lines (175 vs 40 samples).
+      Interpret as in-vivo vs. in-vitro expression differences, not disease biology.
+
+valid_workflows:
+  - activity_scoring
+  - activity_stats
+  - survival
+
+limitations:
+  - "No Moffitt or Bailey subtype annotations in this dataset. Subtype classification
+    requires separate analysis (e.g., Moffitt classifier applied to this data)."
+  - "262 samples include primary tumor (195), cell lines (40), metastatic (16), and
+    PDX (11) specimens. Filter to primary tumor for tumor-specific analyses."
+  - "37/262 samples have missing vital status and survival data."
+  - "survivalB/censorB available for only 47% of samples — not encoded per registry
+    quality policy (>80% coverage required)."
+  - "Stage data missing for 87/262 samples; 'IB or IIB' group is ambiguous."
+  - "ICGC data release version not available from pdacR. Source: pdacR v0.1.2."
+  - "RSEM expected_counts rounded to int32 — small precision loss (~0.5 count max)."
