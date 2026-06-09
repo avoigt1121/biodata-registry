@@ -114,9 +114,19 @@ metadata_columns:
 # Dataset-level guardrails
 # ---------------------------------------------------------------------------
 
+default_sample_filter: "tissue == 'ductal adenocarcinoma tumor'"
+default_sample_filter_note: >
+  Default filter restricts analysis to primary tumor tissue samples (27/47).
+  The 20 PDAC cell line samples have empty 'tissue' values and are excluded
+  unless the user explicitly requests cell line analysis.
+  Apply as: adata = adata[adata.obs.eval(default_sample_filter)].
+
 reporting_rules:
   - "State that expression values are RMA-normalized log2 intensities from Affymetrix GPL570."
-  - "State that only 27/47 samples are primary tumor tissue; 20 are PDAC cell lines."
+  - >
+    ALWAYS state upfront: 'Analysis restricted to primary tumor tissue samples
+    (27/47). 20 PDAC cell line samples were excluded by default. To include
+    cell lines, explicitly request them.'
   - "State that Collisson subtype labels (QM/exocrine/classical) are not encoded in this h5ad
     and were not deposited in GEO."
   - "Probe collapse to gene symbols is required before enrichment or pathway analysis."

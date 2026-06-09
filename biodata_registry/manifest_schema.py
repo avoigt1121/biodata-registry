@@ -261,6 +261,13 @@ class DatasetManifest:
     curated_sample_list: list[str] = field(default_factory=list)
     curated_sample_source: str = ""   # citation / description of where the list came from
 
+    # Optional: pandas query string applied before any analysis when the dataset
+    # contains mixed sample types (e.g. cell lines + primary tumors).
+    # Applied as adata.obs.query(default_sample_filter) at load time.
+    # Empty string = no filter.
+    default_sample_filter: str = ""
+    default_sample_filter_note: str = ""  # human-readable explanation of why the filter exists
+
     @property
     def analysis_path(self) -> str:
         """
@@ -324,6 +331,8 @@ class DatasetManifest:
             dataset_disclaimer=str(d.get("dataset_disclaimer") or ""),
             curated_sample_list=list(d.get("curated_sample_list") or []),
             curated_sample_source=str(d.get("curated_sample_source") or ""),
+            default_sample_filter=str(d.get("default_sample_filter") or ""),
+            default_sample_filter_note=str(d.get("default_sample_filter_note") or ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -358,6 +367,8 @@ class DatasetManifest:
             "dataset_disclaimer": self.dataset_disclaimer,
             "curated_sample_list": self.curated_sample_list,
             "curated_sample_source": self.curated_sample_source,
+            "default_sample_filter": self.default_sample_filter,
+            "default_sample_filter_note": self.default_sample_filter_note,
         }
 
     # ------------------------------------------------------------------

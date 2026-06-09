@@ -111,8 +111,13 @@ metadata_columns:
 
 reporting_rules:
   - "State that expression values are log2 ratios relative to Stratagene Universal Human Reference RNA."
-  - "State that tissue_type was inferred from GEO sample titles, not deposited clinical metadata."
-  - "Note 30 samples of unknown tissue type and 1 IPMN sample."
+  - >
+    ALWAYS state upfront: 'tissue_type was inferred from GEO sample titles,
+    not deposited clinical metadata. 30/132 samples have ambiguous titles
+    labelled unknown — these were excluded from this analysis. Their tissue
+    identity (normal, blood, or reference) has not been manually confirmed.
+    Results reflect the 101 samples with tumor-inferred titles only.'
+  - "Note 1 IPMN sample present and excluded from PDAC analyses by default."
   - "Note that survival data from the paper (6-gene signature) is not available in this h5ad."
 
 refusal_rules:

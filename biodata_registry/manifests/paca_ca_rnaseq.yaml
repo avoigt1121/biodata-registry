@@ -188,11 +188,22 @@ metadata_columns:
 # Dataset-level guardrails
 # ---------------------------------------------------------------------------
 
+default_sample_filter: "specimen_type in ['Primary tumour - other', 'Primary tumour - solid tissue']"
+default_sample_filter_note: >
+  Default filter restricts analysis to primary tumor samples (195/262).
+  Cell lines (40), metastatic tumors (13), PDX xenografts (11), and lymph node
+  metastases (3) are excluded unless the user explicitly requests them.
+  Apply as: adata = adata[adata.obs.eval(default_sample_filter)].
+
 reporting_rules:
   - "State that expression values are RSEM expected_counts rounded to int32."
-  - "Report specimen type breakdown — not all 262 samples are primary tumors."
+  - >
+    ALWAYS state upfront: 'Analysis restricted to primary tumor samples
+    (195/262). Cell lines (40), metastatic (13), PDX (11), and lymph node
+    metastases (3) were excluded by default. To include other sample types,
+    explicitly request them.'
   - "State that Moffitt and Bailey subtype labels are not in this dataset."
-  - "For survival analysis, filter to primary tumor samples with survivalA data."
+  - "For survival analysis, confirm filter to primary tumor samples with survivalA data."
   - >
     When reporting DE results: 'DESeq2 was used because this dataset contains
     RSEM expected_counts (count-level RNA-seq data). DESeq2 models count
