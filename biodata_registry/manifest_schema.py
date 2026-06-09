@@ -255,6 +255,12 @@ class DatasetManifest:
     # Optional: proactive data-quality disclaimer shown at load time
     dataset_disclaimer: str = ""
 
+    # Optional: curated sample list — TCGA barcodes (16-char submitter_id format)
+    # confirming the samples are the target tissue type.  When non-empty, the
+    # loading plan inserts a filter step before any analysis.
+    curated_sample_list: list[str] = field(default_factory=list)
+    curated_sample_source: str = ""   # citation / description of where the list came from
+
     @property
     def analysis_path(self) -> str:
         """
@@ -316,6 +322,8 @@ class DatasetManifest:
             description=str(d.get("description") or ""),
             publication=dict(d.get("publication") or {}),
             dataset_disclaimer=str(d.get("dataset_disclaimer") or ""),
+            curated_sample_list=list(d.get("curated_sample_list") or []),
+            curated_sample_source=str(d.get("curated_sample_source") or ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -348,6 +356,8 @@ class DatasetManifest:
             "description": self.description,
             "publication": self.publication,
             "dataset_disclaimer": self.dataset_disclaimer,
+            "curated_sample_list": self.curated_sample_list,
+            "curated_sample_source": self.curated_sample_source,
         }
 
     # ------------------------------------------------------------------
