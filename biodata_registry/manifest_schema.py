@@ -252,6 +252,9 @@ class DatasetManifest:
     description: str = ""
     publication: dict = field(default_factory=dict)
 
+    # Optional: proactive data-quality disclaimer shown at load time
+    dataset_disclaimer: str = ""
+
     @property
     def analysis_path(self) -> str:
         """
@@ -312,6 +315,7 @@ class DatasetManifest:
             refusal_rules=list(d.get("refusal_rules") or []),
             description=str(d.get("description") or ""),
             publication=dict(d.get("publication") or {}),
+            dataset_disclaimer=str(d.get("dataset_disclaimer") or ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -343,6 +347,7 @@ class DatasetManifest:
             "refusal_rules": self.refusal_rules,
             "description": self.description,
             "publication": self.publication,
+            "dataset_disclaimer": self.dataset_disclaimer,
         }
 
     # ------------------------------------------------------------------
