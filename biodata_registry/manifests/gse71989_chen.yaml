@@ -43,9 +43,25 @@ publication:
   title: "The gene expression of normal pancreatic and PDAC tissues"
 
 expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse71989_chen.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad from GEO series matrix (22 samples x 54675 probes,
+    log2 expression). var["Gene Symbol"] is precomputed via GPL570
+    annotation (45782/54675 probes, 83.7% coverage) so
+    decoupler_collapse_probes_to_genes does not need a separate
+    decoupler_annotate_probes_with_gpl step. Hosted at
+    anne-voigt/pdac-research-data. See original_source for the live-load
+    fallback.
+
+original_source:
   type: geo_series_matrix
   url: "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE71nnn/GSE71989/matrix/GSE71989_series_matrix.txt.gz"
   format: gz
+  note: >
+    Original GEO series matrix used to build the precomputed h5ad above.
+    Retained for provenance and rebuild via scripts/assemble_gse71989_chen.py.
 
 metadata_source:
   type: geo_series_matrix

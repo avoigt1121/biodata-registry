@@ -46,9 +46,21 @@ publication:
     subtypes of pancreatic ductal adenocarcinoma
 
 expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse71729_moffitt.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad from GEO series matrix (357 samples x 19749 genes,
+    log2 expression). Hosted at anne-voigt/pdac-research-data. See
+    original_source for the live-load fallback.
+
+original_source:
   type: geo_series_matrix
   url: "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE71nnn/GSE71729/matrix/GSE71729_series_matrix.txt.gz"
   format: gz
+  note: >
+    Original GEO series matrix used to build the precomputed h5ad above.
+    Retained for provenance and rebuild via scripts/assemble_gse71729_moffitt.py.
 
 metadata_source:
   type: geo_series_matrix

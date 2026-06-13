@@ -54,9 +54,26 @@ publication:
     of pancreatic ductal adenocarcinoma
 
 expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse28735_pdac.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad from GEO series matrix (90 samples x 28869 probes,
+    log2 expression). var["gene_symbol"] is precomputed from GPL6244's
+    gene_assignment column (25293/28869 probes, 87.6% coverage -- GPL6244 has
+    no "Gene Symbol" column, see feature_mapping.gene_symbol_column) so
+    decoupler_collapse_probes_to_genes does not need a separate
+    decoupler_annotate_probes_with_gpl step. Hosted at
+    anne-voigt/pdac-research-data. See original_source for the live-load
+    fallback.
+
+original_source:
   type: geo_series_matrix
   url: "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE28nnn/GSE28735/matrix/GSE28735_series_matrix.txt.gz"
   format: gz
+  note: >
+    Original GEO series matrix used to build the precomputed h5ad above.
+    Retained for provenance and rebuild via scripts/assemble_gse28735_pdac.py.
 
 metadata_source:
   type: geo_series_matrix
@@ -129,9 +146,13 @@ group_columns:
 
 feature_mapping:
   requires_collapse: true
-  gene_symbol_column: "Gene Symbol"
+  gene_symbol_column: "gene_symbol"
   collapse_method: mean
   multi_gene_policy: drop
+  # NOTE: GPL6244 (Affy Human Gene 1.0 ST) has no "Gene Symbol" column in its
+  # platform table -- var["gene_symbol"] is precomputed from the
+  # "gene_assignment" column (first '///'-group's 2nd '//'-field) by
+  # scripts/assemble_gse28735_pdac.py / annotate_with_gpl_gene_assignment.
 
 survival_columns:
   event_column: "cancer_death"   # 1 = event, na = censored

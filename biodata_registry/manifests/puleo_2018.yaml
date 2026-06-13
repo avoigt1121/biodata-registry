@@ -68,11 +68,11 @@ publication:
 
 expression_source:
   type: url
-  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/puleo_2018.h5ad"
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/puleo_2018.h5ad"
   format: h5ad
   note: >
     Pre-assembled h5ad from pdacR Puleo_array.rds (309 samples x 17601 genes,
-    float32 normalized expression). Hosted at anni-voigt/pdac-research-data.
+    float32 normalized expression). Hosted at anne-voigt/pdac-research-data.
 
 metadata_source:
   type: embedded

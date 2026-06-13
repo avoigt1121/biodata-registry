@@ -58,12 +58,12 @@ publication:
 
 expression_source:
   type: url
-  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/gse21501_stratford.h5ad"
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse21501_stratford.h5ad"
   format: h5ad
   note: >
     Pre-assembled h5ad (132 samples x 19749 genes, float32 log2 ratio values).
     Gene symbols collapsed from GPL4133 probe IDs (mean across duplicates).
-    Hosted at anni-voigt/pdac-research-data.
+    Hosted at anne-voigt/pdac-research-data.
 
 metadata_source:
   type: geo_series_matrix

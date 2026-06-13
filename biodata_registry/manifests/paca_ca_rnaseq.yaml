@@ -69,11 +69,11 @@ publication:
 
 expression_source:
   type: url
-  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/paca_ca_rnaseq.h5ad"
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/paca_ca_rnaseq.h5ad"
   format: h5ad
   note: >
     Pre-assembled h5ad from pdacR PACA_CA_seq.rds (262 samples x 65802 genes,
-    int32 RSEM expected_counts). Hosted at anni-voigt/pdac-research-data.
+    int32 RSEM expected_counts). Hosted at anne-voigt/pdac-research-data.
     Ensembl IDs in var.index; gene symbols in var['SYMBOL'].
 
 metadata_source:

@@ -43,9 +43,25 @@ publication:
     in pancreatic ductal adenocarcinoma
 
 expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse62165_jiang.h5ad"
+  format: h5ad
+  note: >
+    Pre-assembled h5ad from GEO series matrix (131 samples x 49386 probes,
+    log2 expression). var["Gene Symbol"] is precomputed via GPL13667
+    annotation (49384/49386 probes, 100.0% coverage) so
+    decoupler_collapse_probes_to_genes does not need a separate
+    decoupler_annotate_probes_with_gpl step. Hosted at
+    anne-voigt/pdac-research-data. See original_source for the live-load
+    fallback.
+
+original_source:
   type: geo_series_matrix
   url: "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE62nnn/GSE62165/matrix/GSE62165_series_matrix.txt.gz"
   format: gz
+  note: >
+    Original GEO series matrix used to build the precomputed h5ad above.
+    Retained for provenance and rebuild via scripts/assemble_gse62165_jiang.py.
 
 metadata_source:
   type: geo_series_matrix

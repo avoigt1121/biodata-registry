@@ -63,11 +63,11 @@ publication:
 
 expression_source:
   type: url
-  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/paca_au_rnaseq.h5ad"
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/paca_au_rnaseq.h5ad"
   format: h5ad
   note: >
     Pre-assembled h5ad from pdacR PACA_AU_seq.rds (92 samples x 32192 genes,
-    int32 RSEM counts). Hosted at anni-voigt/pdac-research-data on HuggingFace.
+    int32 RSEM counts). Hosted at anne-voigt/pdac-research-data on HuggingFace.
 
 metadata_source:
   type: embedded

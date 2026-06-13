@@ -68,12 +68,12 @@ publication:
 
 expression_source:
   type: url
-  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/cptac_pda.h5ad"
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/cptac_pda.h5ad"
   format: h5ad
   note: >
     Pre-assembled h5ad (131 samples x 59742 genes, float32 TPM).
     Gene-level: transcript-level RSEM TPMs summed per gene symbol.
-    Hosted at anni-voigt/pdac-research-data.
+    Hosted at anne-voigt/pdac-research-data.
 
 metadata_source:
   type: embedded

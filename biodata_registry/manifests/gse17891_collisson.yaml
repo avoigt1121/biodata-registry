@@ -57,11 +57,11 @@ publication:
 
 expression_source:
   type: url
-  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/gse17891_collisson.h5ad"
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse17891_collisson.h5ad"
   format: h5ad
   note: >
     Pre-assembled h5ad from GEO series matrix (47 human samples x 54675 probes,
-    float32 RMA log2 expression). Hosted at anni-voigt/pdac-research-data.
+    float32 RMA log2 expression). Hosted at anne-voigt/pdac-research-data.
     Mouse samples (GPL8321) excluded at assembly.
 
 metadata_source:

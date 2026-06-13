@@ -63,11 +63,11 @@ publication:
 
 expression_source:
   type: url
-  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/paca_au_array.h5ad"
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/paca_au_array.h5ad"
   format: h5ad
   note: >
     Pre-assembled h5ad from pdacR PACA_AU_array.rds (131 samples x 21167 genes,
-    float32 log2 expression). Hosted at anni-voigt/pdac-research-data on HuggingFace.
+    float32 log2 expression). Hosted at anne-voigt/pdac-research-data on HuggingFace.
 
 metadata_source:
   type: embedded

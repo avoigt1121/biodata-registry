@@ -52,11 +52,11 @@ publication:
 
 expression_source:
   type: url
-  url: "https://huggingface.co/datasets/anni-voigt/pdac-research-data/resolve/main/gse57495.h5ad"
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse57495.h5ad"
   format: h5ad
   note: >
     Pre-assembled h5ad (63 samples x 60607 probes, float32 log2 expression).
-    Hosted at anni-voigt/pdac-research-data.
+    Hosted at anne-voigt/pdac-research-data.
 
 metadata_source:
   type: geo_series_matrix
