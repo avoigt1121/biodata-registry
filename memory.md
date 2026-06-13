@@ -1,19 +1,85 @@
 # memory.md — biodata-registry Working State
 
-Last updated: 2026-06-09
+Last updated: 2026-06-12
 
 ---
 
 ## Current State
 
 Package is functional, tested, and imported by DecoupleRpy_Agent as the sole manifest source.
-**16 manifests registered** (was 9 before 2026-06-09 session). All manifests validated.
-All new h5ad files hosted at `anni-voigt/pdac-research-data` on HuggingFace.
-All new manifests committed and pushed to `origin` (GitHub).
+**16 manifests registered**, all validated (0 errors).
+**All 16 now use `expression_source.type: url` (precomputed h5ad)** — full
+load-path parity achieved 2026-06-12 (Precompute Cache Phase 1). All h5ad
+files are hosted at `anne-voigt/pdac-research-data` on HuggingFace (migrated
+from `anni-voigt` 2026-06-12 — transfer complete, no `anni-voigt` references
+remain).
+Latest commit `1074739` pushed to `origin` (GitHub); pinned in
+DecoupleRpy_Agent's `requirements.txt`.
+
+---
+
+## What Was Done (2026-06-12)
+
+### Precompute Cache Phase 1 + HF host migration (anni-voigt → anne-voigt)
+
+**11 pre-existing `expression_source.type: url` manifests**: `url` (and any
+`note` text referencing the host) migrated from `anni-voigt/pdac-research-data`
+→ `anne-voigt/pdac-research-data` (`cptac_pda`, `gse15471_badea`,
+`gse17891_collisson`, `gse21501_stratford`, `gse50827_nones`, `gse57495`,
+`paca_au_array`, `paca_au_rnaseq`, `paca_ca_rnaseq`, `puleo_2018`,
+`tcga_paad`). The `anni-voigt` → `anne-voigt` HF account transfer (separately
+pending since before 2026-06-09) is now complete.
+
+**5 remaining `geo_series_matrix` manifests precomputed to `url`/h5ad**,
+bringing all 16 to load-path parity (single `decoupler_load_url_counts` step
+instead of a 5-6 step live `geo_series_matrix` pipeline):
+
+| Dataset | Shape | GPL annotation added |
+|---|---|---|
+| `gse71729_moffitt` | 357 × 19,749 | none — gene symbols already in var.index |
+| `gse71989_chen` | 22 × 54,675 | GPL570, 83.7% gene-symbol coverage |
+| `gse62165_jiang` | 131 × 49,386 | GPL13667, 100% coverage |
+| `gse16515_mayo` | 52 × 54,613 | GPL570, 83.8% coverage; **linear scale preserved** (data_level: normalized, no log2 applied) |
+| `gse28735_pdac` | 90 × 28,869 | GPL6244, 87.6% coverage via new `gene_assignment`-column parser (GPL6244 has no native "Gene Symbol" column) |
+
+For `gse28735_pdac`, `feature_mapping.gene_symbol_column` changed from
+`"Gene Symbol"` → `"gene_symbol"` to match the precomputed
+`var["gene_symbol"]` (derived from `gene_assignment`'s first `///`-group's
+2nd `//`-field). `feature_id_type: entrez_id` is unchanged — `var.index`
+remains 7-digit numeric GPL6244 probe IDs.
+
+Each of the 5 manifests retains a new `original_source: {type:
+geo_series_matrix, url: ...}` block for provenance and rebuild via
+`DecoupleRpy_Agent/scripts/assemble_<dataset_id>.py` + the shared
+`scripts/_precompute_common.py` helpers (new: `_ensure_gse_family_soft`,
+`annotate_with_gpl`, `annotate_with_gpl_gene_assignment`, `stamp_provenance`,
+`write_and_upload`).
+
+All 16 manifests re-verified via `dataset_describe` (loading_plan step 1 =
+`decoupler_load_url_counts`, `validation.valid == True`) and
+`dataset_validate_manifest_against_data` (`overall_valid == True`, 0 errors;
+`gse16515_mayo` carries 1 pre-existing warning — `data_level: normalized`
+can't be auto-classified from value range alone, same as before precompute).
+
+Committed as `1074739` ("Precompute cache for 5 GEO datasets + migrate HF
+host anni-voigt -> anne-voigt"), pushed to `origin`. DecoupleRpy_Agent's
+`requirements.txt` bumped to pin this commit (+ added explicit
+`GEOparse==2.0.4`, previously an unpinned transitive dependency).
+
+### Side effect
+DecoupleRpy_Agent's `src/cache.py:preload_datasets()` no longer preloads
+these 5 at server startup (previously preloaded all `geo_series_matrix`-type
+datasets) — faster cold start. Probe→gene collapse remains a per-query step
+for all probe-indexed datasets across all 16 (Phase 2, not started).
 
 ---
 
 ## Validated Manifest Status
+
+**All 16 manifests now use `expression_source.type: url` / format `h5ad`**
+(parity achieved 2026-06-12 — see "What Was Done (2026-06-12)" above). The
+tables below describe platform/feature/survival characteristics, which are
+unchanged by the precompute migration.
 
 ### Original manifests (pre-2026-06-09)
 
@@ -92,7 +158,8 @@ All new manifests committed and pushed to `origin` (GitHub).
 - Downloaded 3 pdacR RDS files directly from GitHub (no R package install possible)
 - Installed pyreadr (didn't work for pdacR lists) + data.table R package for fast CSV export
 - Installed cptac Python package for CPTAC-PDA
-- All h5ad files uploaded to `anni-voigt/pdac-research-data`
+- All h5ad files uploaded to `anni-voigt/pdac-research-data` (now migrated to
+  `anne-voigt/pdac-research-data`, see 2026-06-12 section above)
 - All manifests pass `pytest tests/` (19 tests) and `dataset_validate_manifest_against_data`
 - Each commit pushed to GitHub after validation
 
@@ -111,6 +178,10 @@ All new manifests committed and pushed to `origin` (GitHub).
 - Agilent GPL4133 probe IDs are integers — type-safe join required for gene symbol mapping
 - CPTAC clinical tables have duplicate column names — dedup before building AnnData
 - GEO two-color arrays (GPL4133): log ratio values, negative values expected and valid
+- GEOparse's own FTP download of `{GSE}_family.soft.gz` is unreliable for files
+  >~20MB — pre-fetch over HTTPS via `requests` first (see
+  `DecoupleRpy_Agent/scripts/_precompute_common.py::_ensure_gse_family_soft`,
+  added 2026-06-12), then point `GEOparse.get_GEO()` at the local file.
 
 ---
 
@@ -139,6 +210,16 @@ Could not find public GEO deposit. PACA-CA data is present; COMPASS labels need 
 Some gene names are date artifacts (e.g., '1-Dec', '1-Mar'). Documented in manifest limitations.
 Fix requires re-mapping through Ensembl or original GPL10558 annotation.
 
+### 8. Live GPL-annotation fallback (DecoupleRpy_Agent) broken for ad-hoc datasets — cross-reference
+Not a biodata-registry issue directly — all 16 registered manifests are now
+precomputed/pre-annotated (see 2026-06-12 section above). But
+`decoupler_annotate_probes_with_gpl` in DecoupleRpy_Agent's
+`src/workflows/geo.py` — the live, agent-facing path for *unregistered* GEO
+datasets — is broken for GPL570 (404 on platform-level SOFT/annot files) and
+GPL13667 (6GB family SOFT file). If a 17th manifest on one of these platforms
+is ever added without precomputing first, this will resurface. See
+`DecoupleRpy_Agent/memory.md` Known Gaps #14.
+
 ---
 
 ## Git State
@@ -147,5 +228,5 @@ Fix requires re-mapping through Ensembl or original GPL10558 annotation.
 |--------|-----|
 | `origin` | `github.com/avoigt1121/biodata-registry` |
 
-Branch: `main`. Up to date with origin (last push: 978599f).
-16 manifests registered. 7 new manifests added in 2026-06-09 session.
+Branch: `main`. Up to date with origin (last push: `1074739`, 2026-06-12).
+16 manifests registered; all 16 now `expression_source.type: url` (format `h5ad`).
