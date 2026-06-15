@@ -16,15 +16,15 @@ remain).
 Latest commit `1074739` pushed to `origin` (GitHub); pinned in
 DecoupleRpy_Agent's `requirements.txt`.
 
-**⚠ Local main is 2 commits ahead of origin** (last pushed `4108214` per status
-doc; HEAD `133e55d` = collapsed_url Phase 2). Push pending.
+**Registry origin/main = `dfbf8c4`** (pushed 2026-06-14). Recent work since the
+status doc: live-data test harness (`e836605`), COMPASS limitation (`d21e03b`),
+Collisson subtypes (`dfbf8c4`). DecoupleRpy_Agent `requirements.txt` pin bumped to
+`dfbf8c4` and committed **locally only** (`227add0`) — NOT pushed/deployed (its
+origin is the HF Space). Deploy when ready by pushing DecoupleRpy_Agent origin.
 
-**⚠ Uncommitted local changes (2026-06-14, live-data test work)**: new
-`tests/test_manifests_against_data.py`; `pyproject.toml` (test extra + `live`
-marker); `missing_values: [""]` added to `paca_au_rnaseq.yaml` Sample.type and
-`puleo_2018.yaml` Resection.margin; `REGISTRY_TODO_PLANS.md` (plans for the
-§4.4/§4.5 status-doc items). Once committed + pushed, bump the
-DecoupleRpy_Agent `requirements.txt` pin.
+Note: the DecoupleRpy_Agent `.venv` had `pypdf` + `xlrd` pip-installed this session
+(used by the Collisson annotation script / supplement parsing); not in any
+requirements file.
 
 ---
 
