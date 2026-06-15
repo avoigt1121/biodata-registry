@@ -16,11 +16,12 @@ remain).
 Latest commit `1074739` pushed to `origin` (GitHub); pinned in
 DecoupleRpy_Agent's `requirements.txt`.
 
-**Registry origin/main = `dfbf8c4`** (pushed 2026-06-14). Recent work since the
-status doc: live-data test harness (`e836605`), COMPASS limitation (`d21e03b`),
-Collisson subtypes (`dfbf8c4`). DecoupleRpy_Agent `requirements.txt` pin bumped to
-`dfbf8c4` and committed **locally only** (`227add0`) — NOT pushed/deployed (its
-origin is the HF Space). Deploy when ready by pushing DecoupleRpy_Agent origin.
+**Registry origin/main = `3bf0eb9`** (pushed 2026-06-14). Work this session since
+the status doc: live-data test harness (`e836605`), COMPASS limitation (`d21e03b`),
+Collisson subtypes (`dfbf8c4`), Nones symbol fix (`3bf0eb9`). DecoupleRpy_Agent
+`requirements.txt` pin bumped to `3bf0eb9`, committed **locally only** (HEAD
+`e027d3a`, 2 ahead of HF origin) — NOT pushed/deployed (its origin is the HF
+Space). Deploy when ready by pushing DecoupleRpy_Agent origin.
 
 Note: the DecoupleRpy_Agent `.venv` had `pypdf` + `xlrd` pip-installed this session
 (used by the Collisson annotation script / supplement parsing); not in any
