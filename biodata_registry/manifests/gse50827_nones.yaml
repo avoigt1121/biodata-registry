@@ -44,8 +44,9 @@ description: >
   Communications). 103 primary PDAC tumor samples. Illumina HumanHT-12 V4.0
   platform, log2-normalized expression. Overall survival available for 98/103
   samples. All samples are primary PDAC tumor tissue (ICGC cohort).
-  Source: pdacR v0.1.2. Note: some gene symbols may be Excel-corrupted
-  (date-format artifacts like '1-Dec', '1-Mar'); verify critical gene names.
+  Source: pdacR v0.1.2. Excel date-artifact gene symbols (e.g. '1-Dec', '1-Mar')
+  were corrected to their real HGNC symbols (DEC1, MARCH1..MARCH11) via the
+  Entrez IDs in the pdacR source — see limitations.
 
 publication:
   doi: "10.1038/ncomms5670"
@@ -116,7 +117,6 @@ metadata_columns:
 reporting_rules:
   - "State that expression values are log2-normalized Illumina HumanHT-12 V4.0 intensities."
   - "State that all 103 samples are primary PDAC tumors — no normal tissue."
-  - "Warn that some gene symbols may be Excel-corrupted (date artifacts)."
 
 refusal_rules:
   - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
@@ -154,7 +154,9 @@ limitations:
   - "No subtype labels (Moffitt, Bailey, or Nones) in this dataset."
   - "No normal tissue — tumor vs. normal DE is not possible."
   - "5/103 samples have missing survival data."
-  - "Some gene symbol names may be Excel-corrupted date artifacts (e.g., '1-Dec' for DEC1,
-    '1-Mar' for MARC1). Verify critical gene names against Ensembl IDs before reporting."
+  - "Gene symbols were Excel-corrupted at the pdacR source (date artifacts like '1-Dec',
+    '1-Mar'); the 12 affected symbols were corrected to their real HGNC symbols (DEC1,
+    MARCH1..MARCH11) using the Entrez IDs in the pdacR featInfo (Entrez-confirmed 1:1,
+    no merges). Fixed h5ad re-uploaded 2026-06-14; provenance in adata.uns.symbol_fix_map."
   - "Expression values are log2-normalized Illumina intensities; do not apply DESeq2 or re-normalize."
   - "No pathological stage available (all stage values are NA in GEO metadata)."

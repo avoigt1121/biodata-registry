@@ -132,7 +132,29 @@ manifest (not a hardcoded copy).
 
 ---
 
-### C. `gse50827_nones` Excel-corrupted gene symbols — LOW
+### C. `gse50827_nones` Excel-corrupted gene symbols — ✅ DONE (2026-06-14)
+
+Fixed via an **Entrez-verified in-place relabel** — better than the planned
+GEO re-assembly, which would have altered normalization. The pdacR source
+(`Nones_GEO_array.rds`) `featInfo` carries a clean `ENTREZID` column alongside the
+corrupted `SYMBOL`, which disambiguates every date artifact 1:1 (`1-Mar`→MARCH1
+Entrez 55016, `1-Dec`→DEC1 50514, … `11-Mar`→MARCH11). All 12 corrupted labels in
+the hosted h5ad were confirmed to map to a single Entrez each (no merges) with no
+name collisions, so the fix is a faithful relabel of 12 `var.index` entries —
+expression values, samples, and all other genes untouched.
+
+- Built `DecoupleRpy_Agent/scripts/fix_gse50827_nones_symbols.py` (reproducible;
+  records the map + Entrez ids in `adata.uns.symbol_fix_map`).
+- Re-uploaded `gse50827_nones.h5ad`; verified zero date-artifact symbols remain
+  and DEC1/MARCH1..MARCH11 are present. Manifest description/limitations/reporting
+  updated (also corrected a manifest error: `1-Mar` is MARCH1, not MARC1).
+  Live-data test passes.
+
+Original plan retained below for reference.
+
+---
+
+### C-orig. `gse50827_nones` Excel-corrupted gene symbols — LOW
 
 **Goal.** Repair gene symbols mangled into date artifacts by Excel autoformat
 (e.g. `1-Dec`, `1-Mar`, `1-Sep`) so feature lookups for those genes succeed.

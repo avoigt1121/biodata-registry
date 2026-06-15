@@ -302,9 +302,12 @@ Open supplement has no machine-readable per-sample subtype table (only figure
 labels + aggregate counts). Donor-ID crosswalk to paca_ca is feasible (157/234)
 but no label values to join. Needs EGA DAA. See COMPASS section above + §4.4-D.
 
-### 7. gse50827_nones Excel-corrupted gene symbols — LOW PRIORITY
-Some gene names are date artifacts (e.g., '1-Dec', '1-Mar'). Documented in manifest limitations.
-Fix requires re-mapping through Ensembl or original GPL10558 annotation.
+### 7. gse50827_nones Excel-corrupted gene symbols — DONE 2026-06-14
+Fixed via Entrez-verified in-place relabel (pdacR featInfo has a clean ENTREZID
+column): 12 date artifacts → DEC1, MARCH1..MARCH11, 1:1 no merges, no collisions.
+Expression values untouched (no GEO re-assembly needed). Fixed h5ad re-uploaded;
+provenance in adata.uns.symbol_fix_map. Script:
+`DecoupleRpy_Agent/scripts/fix_gse50827_nones_symbols.py`.
 
 ### 8. Live GPL-annotation fallback (DecoupleRpy_Agent) broken for ad-hoc datasets — cross-reference
 Not a biodata-registry issue directly — all 16 registered manifests are now
