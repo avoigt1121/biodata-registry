@@ -17,7 +17,39 @@ item because it discharges most of §4.5 at once.
 
 ## §4.4 — In progress / to do
 
-### A. Collisson subtype labels for `gse17891_collisson` — MEDIUM
+### A. Collisson subtype labels for `gse17891_collisson` — ✅ DONE (2026-06-14, Route 1)
+
+Encoded the **original** Collisson 2011 subtype calls (not recomputed). Route 1
+succeeded after locating the open supplement directly: the Nature Medicine article
+HTML is auth-gated, but Supplementary Table 2 ("Patient identifiers and subtypes",
+`41591_2011_BFnm2344_MOESM20_ESM.xls`, authored by A. Sadanandam) downloads openly
+from springer static-content. It lists per-sample subtypes for the GSE17891
+sections: 27 microdissected tumours (by `AGR##.####` id) and 19 human cell lines
+(by name).
+
+- Built `DecoupleRpy_Agent/scripts/annotate_gse17891_collisson_subtypes.py` (reproducible:
+  fetches the supplement, maps QM-PDA→QM / Classical PDA→classical / Exocrine-like
+  PDA→exocrine-like, joins tumours by AGR code in `obs.title` and cell lines by
+  normalized name, writes provenance to `.uns`).
+- Added `obs['collisson_subtype']` to **both** the main and `_collapsed` h5ads and
+  re-uploaded to `anne-voigt/pdac-research-data`. 46/47 labeled
+  (classical 22 / QM 19 / exocrine-like 5); **Capan1 (GSM446778) unlabeled** — not
+  in the supplement.
+- Manifest: added the `collisson_subtype` column (allowed_values + provenance +
+  rules), added it to `group_columns`, added a QM-vs-classical tumour-only
+  `default_contrasts`, removed the old "subtypes not available" refusal rule, and
+  updated description/limitations/reporting rules. Live-data test passes against the
+  uploaded h5ad.
+
+Bonus discovered: the same supplement (Suppl Table 2) also carries GSM-keyed
+subtypes for the **Badea/GSE15471** cohort (rows for `GSM3881xx`) — a ready future
+enhancement for `gse15471_badea` if subtype labels there are ever wanted.
+
+Original plan retained below for reference.
+
+---
+
+### A-orig. Collisson subtype labels for `gse17891_collisson` — MEDIUM
 
 **Goal.** Add per-sample Collisson 2011 subtype labels (quasi-mesenchymal / QM,
 exocrine-like, classical) to the 27 tumor-tissue samples of GSE17891 so that

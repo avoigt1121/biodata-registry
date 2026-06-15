@@ -287,8 +287,15 @@ group column). See REGISTRY_TODO_PLANS.md §4.4-E.
 ### 4. TCGA-PAAD sample curation — MEDIUM PRIORITY
 18.9% non-PDAC contamination. Curated barcode list added to manifest (Knudsen 2019).
 
-### 5. Collisson subtypes missing — MEDIUM PRIORITY
-gse17891_collisson has no subtype labels. Requires manual curation from Collisson 2011 Table S1.
+### 5. Collisson subtypes — DONE 2026-06-14 (Route 1, original labels)
+Curated from Collisson 2011 Suppl Table 2 (`41591_2011_BFnm2344_MOESM20_ESM.xls`,
+downloads openly from springer static-content even though the article is auth-gated).
+Added `obs['collisson_subtype']` to both the main + collapsed h5ads (re-uploaded to
+HF) and to the manifest: 46/47 labeled (classical 22 / QM 19 / exocrine-like 5),
+Capan1 (GSM446778) unlabeled (absent from supplement). New QM-vs-classical
+tumour-only default_contrast. Script:
+`DecoupleRpy_Agent/scripts/annotate_gse17891_collisson_subtypes.py`. NB: same
+supplement also has GSM-keyed subtypes for Badea/GSE15471 (future enhancement).
 
 ### 6. Chan-Seng-Yue 2020 COMPASS subtypes — BLOCKED (investigated 2026-06-14)
 Open supplement has no machine-readable per-sample subtype table (only figure

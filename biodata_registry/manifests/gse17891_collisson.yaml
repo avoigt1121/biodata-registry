@@ -9,9 +9,10 @@
 # (Mouse samples on GPL8321 excluded.)
 # RMA-normalized log2 expression; value range -7.99 – 14.95.
 #
-# SUBTYPE NOTE: Collisson subtypes (quasi-mesenchymal, exocrine-like, classical)
-# are NOT deposited in GEO metadata. They are in Table S1 of the paper supplement.
-# Per quality policy, subtype labels are not encoded — see limitations.
+# SUBTYPE NOTE: Collisson subtypes (quasi-mesenchymal/QM, exocrine-like, classical)
+# are NOT in GEO metadata. They were curated from Collisson 2011 Suppl Table 2
+# ("Patient identifiers and subtypes") and encoded as obs['collisson_subtype']
+# (27 tumours by AGR id + 19 human cell lines by name; Capan1 unlabeled).
 #
 # PATH B: data_level=log_expression → limma or ttest.
 # Do NOT apply DESeq2 or decoupler_preprocess_data.
@@ -45,8 +46,9 @@ description: >
   Pancreatic ductal adenocarcinoma (PDAC) microarray from Collisson et al. 2011
   (Nature Medicine). Defines quasi-mesenchymal (QM), exocrine-like, and classical
   PDAC subtypes. 47 human samples: 27 microdissected tumor tissue + 20 PDAC
-  cell lines. Mouse samples (GPL8321) excluded. Subtype labels from the paper
-  are not deposited in GEO and are not encoded in this manifest.
+  cell lines. Mouse samples (GPL8321) excluded. Collisson subtype labels (QM,
+  classical, exocrine-like) are curated from the paper's Supplementary Table 2
+  and provided in obs['collisson_subtype'].
 
 publication:
   doi: "10.1038/nm.2344"
@@ -70,7 +72,8 @@ metadata_source:
   embedded: true
   note: >
     GEO sample characteristics: tissue (tumor tissue samples only) and cell_line
-    (cell line samples only). Collisson subtype labels NOT in GEO — see limitations.
+    (cell line samples only). Collisson subtypes are NOT in GEO; obs['collisson_subtype']
+    was added from Collisson 2011 Suppl Table 2 (provenance in .uns).
 
 sample_id_column: null
 # GSM accession IDs stored in obs.index.
@@ -111,6 +114,31 @@ metadata_columns:
     refusal_rules:
       - "Refuse to use cell_line as a DE grouping variable."
 
+  collisson_subtype:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "QM"
+      - "classical"
+      - "exocrine-like"
+    missing_values:
+      - ""
+    interpretation_warning: >
+      Collisson 2011 PDAssigner subtypes, curated from the paper's Supplementary
+      Table 2 (QM = quasi-mesenchymal). 46/47 samples labeled: 27 microdissected
+      tumours (8 QM / 14 classical / 5 exocrine-like) and 19 human cell lines
+      (11 QM / 8 classical); Capan1 (GSM446778) is unlabeled — not listed in the
+      supplement. Empty string = unlabeled. Subtypes are defined on both tumours
+      and cell lines; when restricting to tumours via default_sample_filter, expect
+      8 QM / 14 classical / 5 exocrine-like.
+    reporting_rules:
+      - "State that Collisson subtypes are from Collisson 2011 Suppl Table 2 (original
+        PDAssigner calls), not recomputed."
+      - "Report subtype group sizes from the loaded (and filtered) data."
+      - "Note that Capan1 is unlabeled."
+    refusal_rules:
+      - "Refuse subtype analysis that includes unlabeled (empty-string) samples — filter them out first."
+
 # ---------------------------------------------------------------------------
 # Dataset-level guardrails
 # ---------------------------------------------------------------------------
@@ -128,15 +156,13 @@ reporting_rules:
     ALWAYS state upfront: 'Analysis restricted to primary tumor tissue samples
     (27/47). 20 PDAC cell line samples were excluded by default. To include
     cell lines, explicitly request them.'
-  - "State that Collisson subtype labels (QM/exocrine/classical) are not encoded in this h5ad
-    and were not deposited in GEO."
+  - "State that Collisson subtypes (QM/classical/exocrine-like) come from the original
+    Collisson 2011 Suppl Table 2 calls (not deposited in GEO, not recomputed)."
   - "Probe collapse to gene symbols is required before enrichment or pathway analysis."
 
 refusal_rules:
   - "Refuse DESeq2 — data_level is log_expression, not raw_counts."
   - "Refuse survival analysis — no survival data in this dataset."
-  - "Refuse to report Collisson subtype group memberships — subtype labels are not in this h5ad.
-    Direct users to the Collisson 2011 paper supplement (Table S1) for sample-level subtype assignments."
   - "Refuse cell-line-inclusive DE analyses when user intent is to characterize primary tumors."
 
 # ---------------------------------------------------------------------------
@@ -145,6 +171,7 @@ refusal_rules:
 
 group_columns:
   - "tissue"
+  - "collisson_subtype"
 
 feature_mapping:
   requires_collapse: true
@@ -157,10 +184,19 @@ survival_columns:
   time_column: null
 
 default_contrasts:
-  # No meaningful DE contrast within this dataset alone — all 27 tissue samples
-  # are PDAC tumor (no normal tissue). Cell lines vs. tumor is possible but not
-  # a standard biologically interpretable analysis for pathway scoring.
-  # Subtype contrasts require Collisson 2011 supplement labels not in GEO.
+  # Collisson subtype contrast on tumour tissue (cell lines excluded). classical
+  # (14) vs QM (8) is the most-populated, biologically interpretable comparison.
+  - design_factor: "collisson_subtype"
+    test_group: "QM"
+    control_group: "classical"
+    subset_query: "tissue == 'ductal adenocarcinoma tumor' and collisson_subtype.isin(['QM', 'classical'])"
+    method: limma
+    fallback_method: ttest
+    note: >
+      Quasi-mesenchymal vs classical PDAC tumours (Collisson 2011 subtypes).
+      Restricted to microdissected tumour tissue (excludes cell lines and the 5
+      exocrine-like tumours). Expected ~8 QM vs ~14 classical — verify group sizes
+      from loaded data. limma is appropriate for RMA-normalized log2 microarray data.
 
 valid_workflows:
   - microarray
@@ -168,9 +204,10 @@ valid_workflows:
   - activity_stats
 
 limitations:
-  - "Collisson subtype labels (quasi-mesenchymal, exocrine-like, classical) are NOT deposited in
-    GEO metadata and are NOT encoded in this manifest. They must be sourced from Collisson 2011
-    Nature Medicine Table S1 and cannot be retrieved from this h5ad."
+  - "Collisson subtypes (quasi-mesenchymal/QM, classical, exocrine-like) are provided in
+    obs['collisson_subtype'], curated from Collisson 2011 Nature Medicine Supplementary
+    Table 2 (the original PDAssigner calls; not in GEO, not recomputed). 46/47 samples
+    are labeled; Capan1 (GSM446778) is not listed in the supplement and is left unlabeled."
   - "20/47 samples are PDAC cell lines, not primary tumor tissue. Filter to tumor tissue
     (non-empty 'tissue' column) for tumor-specific analyses."
   - "No normal tissue samples — tumor vs. normal DE is not possible."
