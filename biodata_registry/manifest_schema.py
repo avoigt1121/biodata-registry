@@ -17,7 +17,13 @@ modality          str   One of VALID_MODALITIES.
 platform          str   Array/sequencing platform name (free text).
 data_level        str   One of VALID_DATA_LEVELS. Determines analysis_path.
 feature_id_type   str   One of VALID_FEATURE_ID_TYPES.
-expression_source dict  {type: <source_type>, url: ..., format: ...}
+expression_source dict  {type: <source_type>, url: ..., format: ...,
+                        collapsed_url: optional, only for feature_mapping.
+                        requires_collapse=true datasets. URL to a precomputed
+                        h5ad with probes already collapsed to gene symbols via
+                        collapse_method. When set, _build_loading_plan
+                        (DecoupleRpy_Agent) loads this directly and skips the
+                        decoupler_collapse_probes_to_genes step.}
 metadata_source   dict  {type: <source_type>, embedded: bool, ...}
 sample_id_column  str   Column in obs that uniquely identifies samples.
 group_columns     list  Obs columns usable for grouping or DE.

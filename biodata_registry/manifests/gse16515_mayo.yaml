@@ -51,6 +51,7 @@ expression_source:
   type: url
   url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse16515_mayo.h5ad"
   format: h5ad
+  collapsed_url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse16515_mayo_collapsed.h5ad"
   note: >
     Pre-assembled h5ad from GEO series matrix (52 samples x 54613 probes,
     linear-scale normalized expression ~2-65000 -- NOT log2-transformed, per

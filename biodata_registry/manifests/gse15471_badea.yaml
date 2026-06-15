@@ -55,6 +55,7 @@ expression_source:
   type: url
   url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse15471_badea.h5ad"
   format: h5ad
+  collapsed_url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse15471_badea_collapsed.h5ad"
   note: >
     Pre-assembled h5ad from GEO series matrix (78 samples x 54675 probes,
     float32 RMA-normalized log2 expression). Hosted at anne-voigt/pdac-research-data.

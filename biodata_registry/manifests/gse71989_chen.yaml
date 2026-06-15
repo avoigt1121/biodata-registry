@@ -46,6 +46,7 @@ expression_source:
   type: url
   url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse71989_chen.h5ad"
   format: h5ad
+  collapsed_url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse71989_chen_collapsed.h5ad"
   note: >
     Pre-assembled h5ad from GEO series matrix (22 samples x 54675 probes,
     log2 expression). var["Gene Symbol"] is precomputed via GPL570
