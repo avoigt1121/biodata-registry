@@ -122,6 +122,17 @@ def test_moffitt_manifest_is_valid():
     assert result.valid, f"Validation errors: {result.errors}"
 
 
+def test_all_manifests_validate():
+    """Every registered manifest passes schema validation (no errors)."""
+    reg = get_registry()
+    failures = {}
+    for dataset_id in reg.list():
+        result = load_manifest(dataset_id).validate()
+        if not result.valid:
+            failures[dataset_id] = result.errors
+    assert not failures, f"Manifests with validation errors: {failures}"
+
+
 # ---------------------------------------------------------------------------
 # Raw registry access
 # ---------------------------------------------------------------------------

@@ -446,7 +446,15 @@ class DatasetManifest:
 
         # group_columns
         if not self.group_columns:
-            errors.append("group_columns must have at least one entry")
+            if "survival" in self.valid_workflows:
+                # Survival-only cohorts (e.g. a single-condition tumor series with
+                # outcome data) legitimately have no DE grouping column.
+                warnings.append(
+                    "group_columns is empty — permitted because 'survival' is a "
+                    "valid_workflow (no differential-expression grouping column)"
+                )
+            else:
+                errors.append("group_columns must have at least one entry")
 
         # valid_workflows
         if not self.valid_workflows:

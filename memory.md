@@ -16,10 +16,15 @@ remain).
 Latest commit `1074739` pushed to `origin` (GitHub); pinned in
 DecoupleRpy_Agent's `requirements.txt`.
 
-**⚠ Uncommitted local changes (2026-06-14)**: `paca_au_rnaseq.yaml`,
-`paca_au_array.yaml`, `puleo_2018.yaml` have manifest fixes from stress-testing
-(see below) not yet committed/pushed. `requirements.txt` pin in
-DecoupleRpy_Agent will need bumping once these are pushed.
+**⚠ Local main is 2 commits ahead of origin** (last pushed `4108214` per status
+doc; HEAD `133e55d` = collapsed_url Phase 2). Push pending.
+
+**⚠ Uncommitted local changes (2026-06-14, live-data test work)**: new
+`tests/test_manifests_against_data.py`; `pyproject.toml` (test extra + `live`
+marker); `missing_values: [""]` added to `paca_au_rnaseq.yaml` Sample.type and
+`puleo_2018.yaml` Resection.margin; `REGISTRY_TODO_PLANS.md` (plans for the
+§4.4/§4.5 status-doc items). Once committed + pushed, bump the
+DecoupleRpy_Agent `requirements.txt` pin.
 
 ---
 
@@ -253,8 +258,23 @@ Workaround (individual .rds downloads) works fine for data extraction.
 ### 2. No HF deployment for biodata-registry — LOW PRIORITY
 Not currently needed since DecoupleRpy_Agent imports directly.
 
-### 3. Tests only cover schema validation — LOW PRIORITY
-No tests verify column values against live GEO/HF data.
+### 3. Tests only cover schema validation — ADDRESSED 2026-06-14
+Added `tests/test_manifests_against_data.py` — opt-in (`RUN_LIVE_DATA_TESTS=1`,
+`live` marker), parametrized over all 16 manifests. Downloads + caches each h5ad
+and asserts: declared metadata columns exist (embedded metadata only),
+`allowed_values` cover real obs values (numeric-aware so 0/0.0/"0"/"1.0" match;
+literal `nan`/trailing-space preserved), `feature_id_type` vs `var.index`,
+`raw_counts` non-negative + integral, every `default_sample_filter` /
+`subset_query` / survival column evaluates, and `curated_sample_list` barcodes are
+present. 16/16 live + 19/19 offline pass. Caught + fixed two real
+`missing_values` gaps (`paca_au_rnaseq.Sample.type`, `puleo_2018.Resection.margin`).
+Run with the DecoupleRpy_Agent venv (has anndata/scipy):
+`RUN_LIVE_DATA_TESTS=1 PYTHONPATH=. /path/to/DecoupleRpy_Agent/.venv/bin/python -m pytest -m live`.
+
+**Pre-existing schema bug surfaced (not yet fixed):** `gse50827_nones` has
+`group_columns: []` → fails `DatasetManifest.validate()`. Survival-only dataset
+with no DE grouping column; fix is a design decision (relax schema vs. add a
+group column). See REGISTRY_TODO_PLANS.md §4.4-E.
 
 ### 4. TCGA-PAAD sample curation — MEDIUM PRIORITY
 18.9% non-PDAC contamination. Curated barcode list added to manifest (Knudsen 2019).

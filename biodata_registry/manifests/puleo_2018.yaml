@@ -191,7 +191,9 @@ metadata_columns:
     allowed_values:
       - "R0"
       - "R1"
-    description: "Surgical resection margin status. R0 = clear margins, R1 = microscopically involved."
+    missing_values:
+      - ""
+    description: "Surgical resection margin status. R0 = clear margins, R1 = microscopically involved. Not recorded for all samples."
 
   Tumor.grade:
     role: primary_condition

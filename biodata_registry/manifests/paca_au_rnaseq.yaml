@@ -127,6 +127,8 @@ metadata_columns:
       - "Primary tumour"
       - "Cell line "
       - "Metastatic tumour"
+    missing_values:
+      - ""
     interpretation_warning: >
       80/92 samples are primary tumours; 8 are cell lines (note trailing space in the
       stored value, "Cell line "), and 2 are metastatic tumours. 2 samples have no
