@@ -125,10 +125,13 @@ metadata_columns:
     biological_grouping_allowed: false
     allowed_values:
       - "Primary tumour"
-      - "Cell line"
+      - "Cell line "
+      - "Metastatic tumour"
     interpretation_warning: >
-      Nearly all samples are primary tumors. At least one sample is labeled 'Cell line'.
-      Confirm Sample.type == 'Primary tumour' for tumor-only analyses.
+      80/92 samples are primary tumours; 8 are cell lines (note trailing space in the
+      stored value, "Cell line "), and 2 are metastatic tumours. 2 samples have no
+      Sample.type recorded. Confirm Sample.type == 'Primary tumour' for tumor-only
+      analyses, and exclude cell lines and metastases from primary-tumor cohorts.
 
   AJCC.Pathology.Stage:
     role: primary_condition
@@ -198,7 +201,7 @@ default_contrasts:
   - design_factor: "membership.ordered"
     test_group: "Squamous"
     control_group: "Pancreatic Progenitor"
-    subset_query: "obs['membership.ordered'].isin(['Squamous', 'Pancreatic Progenitor'])"
+    subset_query: "`membership.ordered`.isin(['Squamous', 'Pancreatic Progenitor'])"
     method: deseq2
     note: >
       Most-powered contrast among Bailey subtypes (20 vs 21 samples).

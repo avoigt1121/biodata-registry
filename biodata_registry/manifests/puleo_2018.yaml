@@ -253,7 +253,7 @@ default_contrasts:
   - design_factor: "WholeTumorClass"
     test_group: "PureBasal-like"
     control_group: "PureClassical"
-    subset_query: "obs['WholeTumorClass'].isin(['PureBasal-like', 'PureClassical'])"
+    subset_query: "WholeTumorClass.isin(['PureBasal-like', 'PureClassical'])"
     method: limma
     fallback_method: ttest
     note: >

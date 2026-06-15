@@ -180,7 +180,7 @@ default_contrasts:
   - design_factor: "membership.ordered"
     test_group: "Squamous"
     control_group: "Pancreatic Progenitor"
-    subset_query: "obs['membership.ordered'].isin(['Squamous', 'Pancreatic Progenitor'])"
+    subset_query: "`membership.ordered`.isin(['Squamous', 'Pancreatic Progenitor'])"
     method: limma
     fallback_method: ttest
     note: >

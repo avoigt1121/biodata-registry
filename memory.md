@@ -1,6 +1,6 @@
 # memory.md — biodata-registry Working State
 
-Last updated: 2026-06-12
+Last updated: 2026-06-14
 
 ---
 
@@ -15,6 +15,65 @@ from `anni-voigt` 2026-06-12 — transfer complete, no `anni-voigt` references
 remain).
 Latest commit `1074739` pushed to `origin` (GitHub); pinned in
 DecoupleRpy_Agent's `requirements.txt`.
+
+**⚠ Uncommitted local changes (2026-06-14)**: `paca_au_rnaseq.yaml`,
+`paca_au_array.yaml`, `puleo_2018.yaml` have manifest fixes from stress-testing
+(see below) not yet committed/pushed. `requirements.txt` pin in
+DecoupleRpy_Agent will need bumping once these are pushed.
+
+---
+
+## What Was Done (2026-06-14)
+
+### Bailey 2016 / Puleo 2018 stress test — bug found and fixed
+
+Downloaded the real hosted h5ad files for `paca_au_rnaseq`, `paca_au_array`,
+`puleo_2018` and ran `validate_manifest_against_data` against live data
+(previously only schema-validated, never run against actual data).
+
+**Bug found (all 3 manifests)**: `default_contrasts.subset_query` was written
+as `"obs['membership.ordered'].isin([...])"` (bracket-indexing style). Every
+consumer in DecoupleRpy_Agent (`rna.py`, `microarray.py`, `activity_stats.py`,
+`manifest_data_validation.py`) calls `obs_df.query(subset_query)`, which has no
+`obs` name in its eval namespace → `NameError: name 'obs' is not defined`. This
+silently broke the documented "use subset_query from default_contrasts"
+workflow for the Bailey (Squamous vs Pancreatic Progenitor) and Puleo
+(PureBasal-like vs PureClassical) default contrasts — the most likely
+subtype contrasts to be requested for these datasets.
+
+**Fix**: rewrote to `.query()`-compatible syntax:
+- `paca_au_rnaseq.yaml`, `paca_au_array.yaml`:
+  `` "`membership.ordered`.isin(['Squamous', 'Pancreatic Progenitor'])" ``
+  (backticks required — column name contains a `.`)
+- `puleo_2018.yaml`: `"WholeTumorClass.isin(['PureBasal-like', 'PureClassical'])"`
+
+**Secondary fix (`paca_au_rnaseq.yaml`)**: `Sample.type` declared
+`allowed_values: ["Primary tumour", "Cell line"]`, but real data has
+`"Cell line "` (trailing space, 8 samples) and `"Metastatic tumour"` (2
+samples, not declared at all). Updated `allowed_values` to
+`["Primary tumour", "Cell line ", "Metastatic tumour"]` and rewrote the
+interpretation_warning with the real composition (80 primary / 8 cell line /
+2 metastatic / 2 unrecorded, out of 92).
+
+**Result after fixes**: all three manifests validate clean
+(`overall_valid: True`, 0 errors). `puleo_2018` retains one *expected*
+warning — `data_level` can't be auto-classified from value range (0.32–73.9)
+because of its documented non-standard normalization; this is already called
+out in the manifest ("do not back-transform") and is not a new issue (see
+"Puleo 2018 data_level" note below).
+
+**Puleo 2018 data_level / back-transform implications**: the non-standard
+0.32–73.9 range means generic "is this log2 data" heuristics can't confirm
+the declared `log_expression` data_level — hence the warning. This does NOT
+cause errors in the actual analysis path: limma/t-test (Path B) operate
+directly on whatever values are in `.X` without assuming a specific log base,
+and the manifest's "do not back-transform or re-normalize" rule prevents any
+tool from applying a `2**x`/`expm1`-style correction that would be wrong for
+this non-standard scale. The only risk is in *interpretation* — e.g. reporting
+"fold change of 2^logFC" language would be misleading for this dataset, since
+the underlying transform isn't a clean log2. No code currently does this
+back-transform for any dataset, so there's no active bug — just an
+interpretation caveat already covered by existing reporting_rules.
 
 ---
 
