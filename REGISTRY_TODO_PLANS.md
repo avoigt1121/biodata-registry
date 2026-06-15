@@ -143,7 +143,44 @@ passes.
 
 ---
 
-### D. Chan-Seng-Yue 2020 (COMPASS) subtypes — LOW (mostly blocked)
+### D. Chan-Seng-Yue 2020 (COMPASS) subtypes — INVESTIGATED 2026-06-14: confirmed blocked
+
+**Outcome of the open-supplement check (Route 1).** The "labels may be obtainable
+without EGA" hypothesis was tested and **does not hold** — but for a sharper
+reason than originally assumed:
+
+- The open supplement was retrieved directly from springer static-content
+  (article HTML is behind an IDP auth redirect; the ESM files are not):
+  `41588_2019_566_MOESM3_ESM.xlsx` (7 supplementary tables) and the 22 MB
+  `MOESM1_ESM.pdf` (Supplementary Information).
+- **None of the 7 xlsx tables is a per-sample subtype table.** They are cohort
+  summary, SMAD4 loss, Fig-2b marker genes, NMF gene lists, GO pathways, mutation
+  networks, and a basal/classical genomic-explanation summary (aggregate counts
+  like "40/42 cases").
+- The SI PDF mentions 247 unique `PCSI_####` IDs, but only as **heatmap/figure
+  column labels** (adjacent to gene-name row labels), never in a machine-readable
+  row with a subtype value. Subtype terms (basal-like-A/B, classical-A/B, hybrid)
+  appear only in prose.
+- **The ID crosswalk itself is feasible**: 157/234 of this cohort's `submitted_donor_id`
+  PCSI donors appear in the paper (the remaining ~77 are a separate `MPCC_*`
+  cohort). So if per-sample labels were ever obtained, joining them to
+  `paca_ca_rnaseq` by donor ID would work for ~67% of donors. Specimen-level IDs
+  do not match (paca_ca `PCSI_0279_Pa_P` vs SI `PCSI_0132_Pa_P_526`), so any
+  future join must be donor-level.
+
+**Verdict.** Genuinely blocked — not by anonymized IDs, but because the labels are
+not openly tabulated. The only routes are (a) EGA controlled-access to the
+annotated processed data (needs a Data Access Agreement; not worth it for a demo),
+or (b) digitizing figure color-annotation bars (not defensible as ground truth).
+Action taken: recorded a precise, sourced limitation in `paca_ca_rnaseq.yaml`
+(donor crosswalk feasible, labels unavailable, "do not claim COMPASS subtypes").
+No further work unless a DAA is pursued.
+
+Original plan retained below for reference.
+
+---
+
+### D-orig. Chan-Seng-Yue 2020 (COMPASS) subtypes — LOW (mostly blocked)
 
 **Status.** Raw COMPASS expression is EGA controlled-access (ICGC PACA-CA
 pathway) and not pursuable without a Data Access Agreement. PACA-CA *expression*

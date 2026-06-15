@@ -259,6 +259,13 @@ valid_workflows:
 limitations:
   - "No Moffitt or Bailey subtype annotations in this dataset. Subtype classification
     requires separate analysis (e.g., Moffitt classifier applied to this data)."
+  - "Chan-Seng-Yue 2020 (COMPASS, Nat Genet 10.1038/s41588-019-0566-9) defined
+    basal-like-A/B, classical-A/B, and hybrid subtypes on the overlapping PanCuRx
+    (PCSI) cohort, but per-sample subtype calls are NOT published in machine-readable
+    form (the open supplement gives only aggregate counts and figure annotations).
+    Donor IDs would crosswalk — 157/234 of this cohort's PCSI donors appear in that
+    paper — but no label values are available to join without EGA controlled access.
+    Do not claim COMPASS subtypes for these samples."
   - "262 samples include primary tumor (195), cell lines (40), metastatic (16), and
     PDX (11) specimens. Filter to primary tumor for tumor-specific analyses."
   - "37/262 samples have missing vital status and survival data."

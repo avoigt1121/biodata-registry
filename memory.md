@@ -206,11 +206,19 @@ unchanged by the precompute migration.
 - Results must NOT be described as "tumor vs. healthy baseline"
 - 3 patients have 4 samples (whole-tissue + microdissected per paper methods)
 
-### Chan-Seng-Yue 2020 (COMPASS) — SKIPPED
-- Could not find public GEO accession after thorough search
-- Data appears to be EGA controlled-access (ICGC PACA-CA pathway)
-- PACA-CA expression data already available as `paca_ca_rnaseq`
-- COMPASS subtype labels can be applied to paca_ca_rnaseq once obtained from paper supplement
+### Chan-Seng-Yue 2020 (COMPASS) — INVESTIGATED 2026-06-14, confirmed blocked
+- Open supplement checked directly (springer static-content ESM, article HTML is
+  IDP-auth-gated): MOESM3 xlsx = 7 tables, none per-sample; MOESM1 22MB SI PDF has
+  247 `PCSI_####` ids but only as heatmap/figure labels, no machine-readable
+  subtype-per-sample table. Subtype terms appear only in prose/aggregate counts.
+- ID crosswalk WOULD work: 157/234 of paca_ca's `submitted_donor_id.x` PCSI donors
+  appear in the paper (rest are a separate `MPCC_*` cohort); join must be
+  donor-level (specimen suffixes differ: `PCSI_0279_Pa_P` vs `PCSI_0132_Pa_P_526`).
+- Blocked because labels aren't openly tabulated, NOT because of ID mismatch. Only
+  routes: EGA DAA for annotated processed data, or figure-bar digitization
+  (unreliable). Not worth pursuing for the demo.
+- Recorded a precise sourced limitation in `paca_ca_rnaseq.yaml`. See
+  REGISTRY_TODO_PLANS.md §4.4-D.
 
 ---
 
@@ -282,8 +290,10 @@ group column). See REGISTRY_TODO_PLANS.md §4.4-E.
 ### 5. Collisson subtypes missing — MEDIUM PRIORITY
 gse17891_collisson has no subtype labels. Requires manual curation from Collisson 2011 Table S1.
 
-### 6. Chan-Seng-Yue 2020 COMPASS subtypes — LOW PRIORITY
-Could not find public GEO deposit. PACA-CA data is present; COMPASS labels need paper supplement.
+### 6. Chan-Seng-Yue 2020 COMPASS subtypes — BLOCKED (investigated 2026-06-14)
+Open supplement has no machine-readable per-sample subtype table (only figure
+labels + aggregate counts). Donor-ID crosswalk to paca_ca is feasible (157/234)
+but no label values to join. Needs EGA DAA. See COMPASS section above + §4.4-D.
 
 ### 7. gse50827_nones Excel-corrupted gene symbols — LOW PRIORITY
 Some gene names are date artifacts (e.g., '1-Dec', '1-Mar'). Documented in manifest limitations.
