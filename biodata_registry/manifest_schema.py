@@ -391,8 +391,22 @@ class DatasetManifest:
         """
         errors: list[str] = []
         warnings: list[str] = []
+        self._check_required_fields(errors)
+        self._check_vocabularies(errors)
+        self._check_expression_source(errors, warnings)
+        self._check_metadata_source(errors, warnings)
+        self._check_groups_workflows_limitations(errors, warnings)
+        self._check_feature_mapping(warnings)
+        self._check_metadata_columns(warnings)
+        self._check_default_contrasts(warnings)
+        return ManifestValidationResult(
+            valid=len(errors) == 0,
+            errors=errors,
+            warnings=warnings,
+        )
 
-        # Non-empty required strings
+    # ── validate() helpers (one concern each) ────────────────────────────
+    def _check_required_fields(self, errors: list[str]) -> None:
         for fname in [
             "dataset_id", "title", "accession", "organism",
             "modality", "platform", "data_level", "feature_id_type",
@@ -400,7 +414,7 @@ class DatasetManifest:
             if not str(getattr(self, fname, "")).strip():
                 errors.append(f"'{fname}' must be a non-empty string")
 
-        # Controlled vocabularies
+    def _check_vocabularies(self, errors: list[str]) -> None:
         if self.organism not in VALID_ORGANISMS:
             errors.append(
                 f"organism '{self.organism}' not in {sorted(VALID_ORGANISMS)}"
@@ -419,7 +433,7 @@ class DatasetManifest:
                 f"{sorted(VALID_FEATURE_ID_TYPES)}"
             )
 
-        # expression_source
+    def _check_expression_source(self, errors: list[str], warnings: list[str]) -> None:
         src_type = self.expression_source.get("type")
         if not src_type:
             errors.append("expression_source.type is required")
@@ -434,7 +448,7 @@ class DatasetManifest:
                 "agent cannot auto-download this dataset"
             )
 
-        # metadata_source
+    def _check_metadata_source(self, errors: list[str], warnings: list[str]) -> None:
         meta_type = self.metadata_source.get("type")
         if not meta_type:
             errors.append("metadata_source.type is required")
@@ -444,7 +458,9 @@ class DatasetManifest:
                 f"{sorted(VALID_METADATA_SOURCE_TYPES)}"
             )
 
-        # group_columns
+    def _check_groups_workflows_limitations(
+        self, errors: list[str], warnings: list[str]
+    ) -> None:
         if not self.group_columns:
             if "survival" in self.valid_workflows:
                 # Survival-only cohorts (e.g. a single-condition tumor series with
@@ -472,7 +488,7 @@ class DatasetManifest:
                 "for honest reporting"
             )
 
-        # feature_mapping consistency
+    def _check_feature_mapping(self, warnings: list[str]) -> None:
         if self.feature_id_type == "probe_id":
             if not self.feature_mapping.get("requires_collapse"):
                 warnings.append(
@@ -486,7 +502,7 @@ class DatasetManifest:
                     f"{sorted(VALID_COLLAPSE_METHODS)}"
                 )
 
-        # metadata_columns consistency
+    def _check_metadata_columns(self, warnings: list[str]) -> None:
         for col_name, col_def in self.metadata_columns.items():
             role = col_def.role if isinstance(col_def, MetadataColumnDef) else col_def.get("role", "")
             bio_ok = (col_def.biological_grouping_allowed if isinstance(col_def, MetadataColumnDef)
@@ -502,7 +518,7 @@ class DatasetManifest:
                     f"but '{col_name}' appears in group_columns"
                 )
 
-        # default_contrasts consistency
+    def _check_default_contrasts(self, warnings: list[str]) -> None:
         for i, contrast in enumerate(self.default_contrasts):
             method = contrast.get("method")
             if method and method not in VALID_DE_METHODS:
@@ -515,12 +531,6 @@ class DatasetManifest:
                     f"default_contrasts[{i}].method='deseq2' on a Path B dataset "
                     f"(data_level='{self.data_level}') — DESeq2 requires raw integer counts"
                 )
-
-        return ManifestValidationResult(
-            valid=len(errors) == 0,
-            errors=errors,
-            warnings=warnings,
-        )
 
 
 # ---------------------------------------------------------------------------

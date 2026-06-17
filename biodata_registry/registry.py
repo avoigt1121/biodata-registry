@@ -28,9 +28,14 @@ it only knows where manifests are on disk and how to load them.
 
 import warnings
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import yaml
+
+if TYPE_CHECKING:
+    # Imported lazily at runtime (inside functions); declared here only so the
+    # string annotations below resolve for type checkers and linters.
+    from .manifest_schema import DatasetManifest, ManifestValidationResult
 
 _MANIFEST_DIR = Path(__file__).parent / "manifests"
 
