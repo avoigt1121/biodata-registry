@@ -38,10 +38,11 @@ over MCP without importing the package directly.
 
 ```
 biodata_registry/
-  __init__.py          — public API: get_registry(), load_manifest(), list_available_datasets()
+  __init__.py          — public API: get_registry(), load_manifest(), list_available_datasets(), get_integration_plan()
   registry.py          — auto-discovers and indexes YAML manifests at import time
   manifest_schema.py   — typed DatasetManifest dataclass + controlled vocabularies
-  server.py            — FastMCP server exposing 4 MCP tools
+  integration.py       — get_integration_plan(): pure cross-dataset compatibility engine (early/late/refuse)
+  server.py            — FastMCP server exposing 5 MCP tools
   manifests/
     gse71729_moffitt.yaml   ← fully annotated reference manifest
     gse28735_pdac.yaml
@@ -55,7 +56,7 @@ tests/
 
 ---
 
-## The Four MCP Tools (server.py)
+## The Five MCP Tools (server.py)
 
 | Tool | What it does |
 |------|-------------|
@@ -63,8 +64,26 @@ tests/
 | `get_manifest` | Full manifest dict for a dataset |
 | `get_prohibited_inferences` | Refusal rules — what agents must not claim |
 | `get_contrast_definition` | Contrast definitions for a specific design_factor column |
+| `get_integration_plan` | Decide if datasets combine early (pool) / late (meta-analyze) / refuse — pure metadata function (ADR-0001) |
 
 Run the server: `python -m biodata_registry.server`
+
+### Cross-dataset integration (`integration.py`, ADR-0001 Phase 1)
+
+`get_integration_plan(dataset_ids, design_factor=None, test_group=None, control_group=None)`
+is a **pure function of manifest metadata** — it loads no expression data. It runs a
+6-gate decision (arity → organism/ortholog bridge → shared `gene_symbol` feature space →
+modality → `data_level` poolability [D3] → metadata-level confound) and returns
+`mode` (`early`/`late`/`refuse`), a human-readable `reason`, and the flags an agent needs
+(`shared_feature_space`, `requires_probe_collapse`, `requires_ortholog_mapping`,
+`batch_key`, `poolable_data_level`, `per_dataset`, `refusal_rules_triggered`).
+
+Key rule (D3): early pooling requires the **same** `data_level` on every dataset, and that
+level must be poolable (`raw_counts`/`log_expression`/`log_ratio`/`tpm`/`fpkm`).
+`normalized` and `protein_abundance` are never pooled (→ `late`). The optional contrast
+args drive the confound gate; without them the design-separability check is deferred to the
+specialist at runtime (registry stays metadata-pure). `pure plan_for_manifests()` is the
+underlying engine, unit-testable against constructed `DatasetManifest` objects.
 
 ---
 

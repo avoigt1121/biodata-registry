@@ -1,6 +1,66 @@
 # memory.md — biodata-registry Working State
 
-Last updated: 2026-06-17
+Last updated: 2026-06-18
+
+---
+
+## 2026-06-18 session — cross-dataset integration engine (ADR-0001 Phase 1, step 2)
+
+Added the cross-dataset compatibility decision function + a 5th MCP tool.
+**On feature branch `feat/integration-plan` (commit `31ad048`) — NOT merged to
+main, NOT pushed, NOT in a wheel.** Wheel build / version bump / consumer re-pin
+are deliberately deferred to the release task (ADR T4/T6).
+
+- **New module `biodata_registry/integration.py`**:
+  `get_integration_plan(dataset_ids, design_factor=None, test_group=None,
+  control_group=None)` — a **pure function of manifest metadata** (loads no
+  data). Decides `mode` ∈ `early` (pool expression, `dataset_id` as batch
+  covariate) / `late` (meta-analyze per-dataset) / `refuse`. Returns `reason`
+  (agent surfaces verbatim), `shared_feature_space`, `requires_probe_collapse`,
+  `requires_ortholog_mapping`, `batch_key`, `poolable_data_level`,
+  `per_dataset`, `refusal_rules_triggered`. The pure engine
+  `plan_for_manifests(manifests, ...)` is split out so it's unit-testable
+  against constructed `DatasetManifest` objects without the registry.
+- **6-gate resolution** (first failing gate decides; short-circuit on refuse):
+  1 arity (`NOT_MULTI`), 2 organism/ortholog bridge (`CROSS_ORGANISM_NO_BRIDGE`;
+  mixed-but-bridgeable sets `requires_ortholog_mapping=True` and continues),
+  3 shared `gene_symbol` space (`NO_SHARED_FEATURE_SPACE`), 4 modality
+  (`CROSS_MODALITY`, v1 transcriptome-vs-proteome only), 5 `data_level`
+  poolability (**D3**), 6 metadata confound (`CONFOUNDED_DESIGN`).
+- **D3 (signed off):** early pooling requires the **same** `data_level` on every
+  dataset *and* that level in `{raw_counts, log_expression, log_ratio, tpm,
+  fpkm}`. `normalized` (scale unspecified) and `protein_abundance` are **never**
+  early — even when equal across datasets they go `late`. Any level mismatch →
+  `late`. early→late downgrades are NOT refusals (they carry a clear `reason`).
+- **Gate 3 detail:** `gene_symbol` direct; `probe_id`+`requires_collapse=True`
+  ok (sets `requires_probe_collapse`); `ensembl_gene_id`/`entrez_id` id-map;
+  `probe_id`+`requires_collapse=False` → refuse; `protein_id` is treated as
+  reachable (protein→gene) so the **modality** gate (4), not the feature gate,
+  is what stops a transcriptome+proteome mix.
+- **Spec gap resolved:** the signed-off signature was `get_integration_plan(
+  dataset_ids)` but Gate 6 references "the requested contrast." Added **optional**
+  `design_factor`/`test_group`/`control_group` kwargs (keeps the single-arg call
+  valid). With no contrast supplied, Gate 6 **defers** (never fabricates
+  `CONFOUNDED_DESIGN`) — matching the ADR registry-vs-specialist split (the
+  sample-level confound check stays the specialist's runtime job). The confound
+  check is also conservative: refuses only on positive metadata evidence that no
+  single cohort can express both arms; sparse metadata defers.
+- **5th MCP tool** in `server.py`: `@mcp.tool() get_integration_plan(...)`
+  delegating to the module (docstring + module "Tools exposed" list updated).
+  Exported from `__init__.py`. CLAUDE.md updated (now "Five MCP Tools" + an
+  integration.py section) — genuine architecture change.
+- **Tests** `tests/test_integration_plan.py`: 22 tests covering the full ADR
+  checklist (equal raw_counts/log_expression → early; mixed → late; equal
+  `normalized` → late *not* early; probe collapse=False → refuse; human+mouse no
+  bridge → refuse; 1 dataset → NOT_MULTI; declared confound → CONFOUNDED_DESIGN;
+  every plan has a non-empty reason) plus extras (protein_abundance→late,
+  bridgeable cross-organism continues, cross-modality, confound-deferred,
+  output-contract shape). Real ids used where the registry allows; synthetic
+  manifests for the cases the all-human/no-proteomics 16-dataset registry can't
+  express. **21 pass, 1 skip** (MCP-tool test `importorskip`s fastmcp, which
+  isn't installed locally). Full repo suite stays green (41 passed, 2 skipped).
+  Ran under CommandLineTools py3.9.6 — `from __future__ import annotations`
+  keeps the `tuple[...]`/`list[...]` annotations lazy so it imports fine there.
 
 ---
 
@@ -360,5 +420,9 @@ is ever added without precomputing first, this will resurface. See
 |--------|-----|
 | `origin` | `github.com/avoigt1121/biodata-registry` |
 
-Branch: `main`. Up to date with origin (last push: `1074739`, 2026-06-12).
 16 manifests registered; all 16 now `expression_source.type: url` (format `h5ad`).
+
+**This session (2026-06-18):** working on branch `feat/integration-plan`
+(commit `31ad048` — integration engine + 5th MCP tool + tests + doc sync). Not
+yet merged to `main` or pushed to `origin`; no wheel cut. Merge/release when the
+ADR T4/T6 release step runs (then re-pin the consuming Spaces).

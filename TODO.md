@@ -13,6 +13,18 @@ pdac-analysis-orchestrator.
 
 ## Open
 
+### Cross-dataset integration (ADR-0001)
+
+- **Med — Release the integration engine.** `get_integration_plan` + the 5th MCP
+  tool landed on branch `feat/integration-plan` (`31ad048`, 2026-06-18) but are
+  not merged/pushed and not in a wheel. ADR T4/T6 release step: merge to `main`,
+  bump version, cut + push the wheel, then re-pin DecoupleRpy_Agent (and any
+  other consumer) to the new commit/wheel. See `memory.md` 2026-06-18 section.
+- **Cross-reference (not registry-side)** — the agent-side wrapper, the
+  meta-analysis engine, and the pooling/batch-correction code are
+  DecoupleRpy_Agent's job (ADR-0001 Phase 1/2). The registry only decides
+  compatibility; the specialist acts and does the sample-level confound guard.
+
 ### Schema / validation
 
 - **Med — `gse50827_nones` fails `DatasetManifest.validate()`.** Survival-only
@@ -60,6 +72,10 @@ pdac-analysis-orchestrator.
 
 ## Done (recent)
 
+- 2026-06-18 — Cross-dataset compatibility engine (`get_integration_plan`) +
+  5th MCP tool + 22 unit tests (ADR-0001 Phase 1, step 2). Pure metadata
+  function; early/late/refuse with the D3 `data_level` poolability rule. On
+  branch `feat/integration-plan` (`31ad048`); release pending (see Open above).
 - 2026-06-14 — Collisson 2011 subtype labels added to `gse17891_collisson`
   (46/47 labeled; original labels, Route 1).
 - 2026-06-14 — `gse50827_nones` Excel-corrupted gene symbols fixed
