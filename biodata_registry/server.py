@@ -21,14 +21,21 @@ get_prohibited_inferences(dataset_id)
 
 get_contrast_definition(dataset_id, column)
     Return all default contrast definitions for a specific design_factor column.
+
+get_integration_plan(dataset_ids, design_factor=None, test_group=None,
+                     control_group=None)
+    Decide whether multiple datasets can be combined early (pool expression),
+    late (meta-analyze results), or refused — a pure function of manifest
+    metadata.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from fastmcp import FastMCP
 
+from .integration import get_integration_plan as _get_integration_plan
 from .registry import get_registry, load_manifest, list_available_datasets
 
 mcp = FastMCP("biodata-registry")
@@ -156,6 +163,60 @@ def get_contrast_definition(dataset_id: str, column: str) -> dict[str, Any]:
         "contrasts": contrasts,
         "column_metadata": column_metadata,
     }
+
+
+@mcp.tool()
+def get_integration_plan(
+    dataset_ids: list[str],
+    design_factor: Optional[str] = None,
+    test_group: Optional[str] = None,
+    control_group: Optional[str] = None,
+) -> dict[str, Any]:
+    """
+    Decide how (or whether) multiple datasets can be combined.
+
+    Pure function of manifest metadata — loads no expression data. Resolves the
+    cross-dataset compatibility decision matrix (ADR-0001): organism / ortholog
+    bridge, shared gene_symbol feature space, modality, data_level poolability,
+    and metadata-level design confound.
+
+    Parameters
+    ----------
+    dataset_ids:
+        Two or more registered dataset identifiers. Fewer than two yields a
+        refusal (NOT_MULTI).
+    design_factor, test_group, control_group:
+        Optional. The contrast the caller intends to run. When supplied, the
+        confound gate refuses (CONFOUNDED_DESIGN) if metadata shows no single
+        cohort can express both arms. When omitted, design separability is
+        deferred to the specialist's runtime check.
+
+    Returns
+    -------
+    Dict with:
+      - mode: "early" | "late" | "refuse"
+      - reason: str — human-readable, surfaced verbatim by the agent
+      - shared_feature_space: str | None (e.g. "gene_symbol")
+      - requires_ortholog_mapping: bool
+      - requires_probe_collapse: bool
+      - batch_key: str ("dataset_id")
+      - poolable_data_level: str | None (the shared level when mode == "early")
+      - per_dataset: list of {dataset_id, organism, modality, data_level,
+        analysis_path, feature_id_type, requires_collapse}
+      - refusal_rules_triggered: list[str] — stable codes (NOT_MULTI,
+        CROSS_ORGANISM_NO_BRIDGE, NO_SHARED_FEATURE_SPACE, CROSS_MODALITY,
+        CONFOUNDED_DESIGN)
+
+    Raises
+    ------
+    ValueError if any dataset_id is not registered.
+    """
+    return _get_integration_plan(
+        dataset_ids,
+        design_factor=design_factor,
+        test_group=test_group,
+        control_group=control_group,
+    )
 
 
 if __name__ == "__main__":

@@ -32,6 +32,7 @@ Adding a new dataset
 """
 
 from .registry import DatasetRegistry, load_manifest, list_available_datasets
+from .integration import get_integration_plan
 
 _registry = None
 
@@ -49,4 +50,5 @@ __all__ = [
     "get_registry",
     "load_manifest",
     "list_available_datasets",
+    "get_integration_plan",
 ]
