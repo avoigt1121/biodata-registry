@@ -16,10 +16,11 @@ pdac-analysis-orchestrator.
 ### Cross-dataset integration (ADR-0001)
 
 - **Med — Release the integration engine.** `get_integration_plan` + the 5th MCP
-  tool landed on branch `feat/integration-plan` (`31ad048`, 2026-06-18) but are
-  not merged/pushed and not in a wheel. ADR T4/T6 release step: merge to `main`,
-  bump version, cut + push the wheel, then re-pin DecoupleRpy_Agent (and any
-  other consumer) to the new commit/wheel. See `memory.md` 2026-06-18 section.
+  tool landed on branch `feat/integration-plan` (`31ad048`, 2026-06-18), pushed
+  to the GitHub `github` remote with an open PR vs `main`; not yet merged and not
+  in a wheel. ADR T4/T6 release step: merge the PR, bump version, cut + push the
+  wheel, then re-pin DecoupleRpy_Agent (and any other consumer) to the new
+  commit/wheel. See `memory.md` 2026-06-18 section.
 - **Cross-reference (not registry-side)** — the agent-side wrapper, the
   meta-analysis engine, and the pooling/batch-correction code are
   DecoupleRpy_Agent's job (ADR-0001 Phase 1/2). The registry only decides
@@ -65,8 +66,11 @@ pdac-analysis-orchestrator.
   download workaround works fine for data extraction.
 - **Low — No HF deployment for biodata-registry.** Not needed while
   DecoupleRpy_Agent imports the package directly.
-- **Low — Push local `main` to `origin`.** Local is 2 commits ahead of
-  `origin/main` (`release.sh` + the 0.1.0 wheel upload) as of 2026-06-17.
+- **Low — HF `origin` mirror may lag `main`.** GitHub `github`
+  (`avoigt1121/biodata-registry`) `main` was synced to `89b9b12` on 2026-06-18
+  (the 0.1.1 release commits). This clone's `origin`/`hf` remotes point to
+  HuggingFace (`anne-voigt/biodata-registry`); push `main` there too if the
+  wheel-host mirror needs to match.
 
 ---
 

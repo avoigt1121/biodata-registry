@@ -7,9 +7,10 @@ Last updated: 2026-06-18
 ## 2026-06-18 session — cross-dataset integration engine (ADR-0001 Phase 1, step 2)
 
 Added the cross-dataset compatibility decision function + a 5th MCP tool.
-**On feature branch `feat/integration-plan` (commit `31ad048`) — NOT merged to
-main, NOT pushed, NOT in a wheel.** Wheel build / version bump / consumer re-pin
-are deliberately deferred to the release task (ADR T4/T6).
+**On feature branch `feat/integration-plan` (commit `31ad048`), pushed to GitHub
+with an open PR — NOT merged to main, NOT in a wheel.** Wheel build / version
+bump / consumer re-pin are deliberately deferred to the release task (ADR
+T4/T6).
 
 - **New module `biodata_registry/integration.py`**:
   `get_integration_plan(dataset_ids, design_factor=None, test_group=None,
@@ -422,7 +423,11 @@ is ever added without precomputing first, this will resurface. See
 
 16 manifests registered; all 16 now `expression_source.type: url` (format `h5ad`).
 
-**This session (2026-06-18):** working on branch `feat/integration-plan`
-(commit `31ad048` — integration engine + 5th MCP tool + tests + doc sync). Not
-yet merged to `main` or pushed to `origin`; no wheel cut. Merge/release when the
-ADR T4/T6 release step runs (then re-pin the consuming Spaces).
+**This session (2026-06-18):** branch `feat/integration-plan` (integration
+engine + 5th MCP tool + tests + doc sync) **pushed to the GitHub remote**
+`avoigt1121/biodata-registry` with an open PR vs `main`. While pushing, GitHub
+`main` was fast-forwarded `0c299ea → 89b9b12` (it had been 6 commits behind —
+the unpushed 0.1.1 release work). NB: this clone's `origin`/`hf` remotes both
+point to **HuggingFace** (`anne-voigt/biodata-registry`, wheel host); a separate
+`github` remote was added this session for the GitHub canonical repo. Not yet
+merged; no wheel cut — merge/release at ADR T4/T6 (then re-pin consumers).
