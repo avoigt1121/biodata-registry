@@ -4,6 +4,23 @@ Stable architecture reference. Current status → `memory.md`.
 
 ---
 
+## Memory maintenance (after every commit)
+
+These status files drift unless updated at commit time. After any `git commit` in this
+repo (GitHub-only — no HF Space), update whatever that commit changed, and skip what it
+didn't:
+
+- `memory.md` — current status / what just changed
+- `TODO.md` / `REGISTRY_TODO_PLANS.md` — task status (move done items, add new ones)
+- `/Users/annivoigt/Documents/GitHub/SHOWCASE_STATUS.md` — the cross-repo rollup; update especially when a manifest bump needs to be re-pinned in a consuming repo
+- `CLAUDE.md` (this file) — only when the architecture itself changes (rare)
+
+A PostToolUse hook (`~/.claude/hooks/remind-memory-sync.py`, wired in
+`~/.claude/settings.json`) prints this checklist automatically after each commit. It only
+*reminds* — the edits are still done by hand.
+
+---
+
 ## What This Repo Is
 
 A **pip-installable Python package** that provides a shared dataset manifest registry
