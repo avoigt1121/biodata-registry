@@ -1,6 +1,34 @@
 # memory.md — biodata-registry Working State
 
-Last updated: 2026-06-18
+Last updated: 2026-06-19
+
+---
+
+## 2026-06-19 session — integration engine merged + released as 0.1.2 (ADR-0001 T2 release)
+
+`feat/integration-plan` **merged to `main`** and **released as wheel `0.1.2`** —
+this closes the ADR-0001 T2 release. The wheel ships as a git-tracked artifact at
+the repo root and is published via `git push hf` (the HF **API** token is
+read-only, so `scripts/release.sh`'s `huggingface-cli upload` step is bypassed —
+same pattern as 0.1.0/0.1.1).
+
+- **Merge:** `feat/integration-plan` (`31ad048`→`c464404`) fast-forwarded into
+  `main`; pushed to `github` (`89b9b12..cbc083a`, **closes the PR**) and `hf`
+  (`6beb787..cbc083a`).
+- **Release commit `cbc083a`:** bump `pyproject.toml` `0.1.1`→`0.1.2` + add
+  `biodata_registry-0.1.2-py3-none-any.whl` (70134 bytes).
+- **Consumer pin (DecoupleRpy_Agent T4 re-pins to this):**
+  `biodata-registry @ https://huggingface.co/anne-voigt/biodata-registry/resolve/cbc083a5cd9dbe79e6740a6b64c4dc8c0639f113/biodata_registry-0.1.2-py3-none-any.whl`
+  — sha256 `607a14b060ddd3fb9b5a889742b2e6c01d8f67b11c1905cfbea04dcc796082ad`.
+  Verified served over the HF resolve endpoint (200, 70134 bytes, sha matches the
+  built wheel).
+- **Pre-release verification:** 42/42 tests green (22 integration + 20 registry)
+  against the source; the built wheel re-checked in an isolated install
+  (`get_integration_plan` importable, 16 manifests bundled, integration.py +
+  server.py present).
+- **Next (DecoupleRpy_Agent, this is now unblocked):** T4 — re-pin
+  `requirements.txt` to the URL above + add the `dataset_get_integration_plan`
+  wrapper tool. Then T5 (`decoupler_meta_analyze` + A→B→refuse wiring).
 
 ---
 
@@ -10,7 +38,8 @@ Added the cross-dataset compatibility decision function + a 5th MCP tool.
 **On feature branch `feat/integration-plan` (commit `31ad048`), pushed to GitHub
 with an open PR — NOT merged to main, NOT in a wheel.** Wheel build / version
 bump / consumer re-pin are deliberately deferred to the release task (ADR
-T4/T6).
+T4/T6). *(Superseded 2026-06-19: merged to `main` + released as 0.1.2 — see the
+entry above.)*
 
 - **New module `biodata_registry/integration.py`**:
   `get_integration_plan(dataset_ids, design_factor=None, test_group=None,

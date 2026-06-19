@@ -15,12 +15,6 @@ pdac-analysis-orchestrator.
 
 ### Cross-dataset integration (ADR-0001)
 
-- **Med — Release the integration engine.** `get_integration_plan` + the 5th MCP
-  tool landed on branch `feat/integration-plan` (`31ad048`, 2026-06-18), pushed
-  to the GitHub `github` remote with an open PR vs `main`; not yet merged and not
-  in a wheel. ADR T4/T6 release step: merge the PR, bump version, cut + push the
-  wheel, then re-pin DecoupleRpy_Agent (and any other consumer) to the new
-  commit/wheel. See `memory.md` 2026-06-18 section.
 - **Cross-reference (not registry-side)** — the agent-side wrapper, the
   meta-analysis engine, and the pooling/batch-correction code are
   DecoupleRpy_Agent's job (ADR-0001 Phase 1/2). The registry only decides
@@ -66,20 +60,26 @@ pdac-analysis-orchestrator.
   download workaround works fine for data extraction.
 - **Low — No HF deployment for biodata-registry.** Not needed while
   DecoupleRpy_Agent imports the package directly.
-- **Low — HF `origin` mirror may lag `main`.** GitHub `github`
-  (`avoigt1121/biodata-registry`) `main` was synced to `89b9b12` on 2026-06-18
-  (the 0.1.1 release commits). This clone's `origin`/`hf` remotes point to
-  HuggingFace (`anne-voigt/biodata-registry`); push `main` there too if the
-  wheel-host mirror needs to match.
+- **Low — HF `origin` mirror may lag `main`.** As of 2026-06-19 both GitHub
+  `github` (`avoigt1121/biodata-registry`) and the HF `origin`/`hf` mirror
+  (`anne-voigt/biodata-registry`, the wheel host) have `main` synced at
+  `cbc083a` (the 0.1.2 release). Re-push `main` to `hf` after any future wheel so
+  the resolve URL's commit exists on the mirror.
 
 ---
 
 ## Done (recent)
 
+- 2026-06-19 — **Integration engine merged + released as wheel 0.1.2** (closes
+  ADR-0001 T2 release). `feat/integration-plan` fast-forwarded into `main`;
+  pushed to `github` (PR closed) and `hf` (`cbc083a`). Consumer pin:
+  `.../resolve/cbc083a5cd9dbe79e6740a6b64c4dc8c0639f113/biodata_registry-0.1.2-py3-none-any.whl`
+  (sha256 `607a14b0…`), verified served. DecoupleRpy_Agent T4 re-pins next.
 - 2026-06-18 — Cross-dataset compatibility engine (`get_integration_plan`) +
   5th MCP tool + 22 unit tests (ADR-0001 Phase 1, step 2). Pure metadata
   function; early/late/refuse with the D3 `data_level` poolability rule. On
-  branch `feat/integration-plan` (`31ad048`); release pending (see Open above).
+  branch `feat/integration-plan` (`31ad048`); merged + released 2026-06-19 as
+  0.1.2 (see above).
 - 2026-06-14 — Collisson 2011 subtype labels added to `gse17891_collisson`
   (46/47 labeled; original labels, Route 1).
 - 2026-06-14 — `gse50827_nones` Excel-corrupted gene symbols fixed
