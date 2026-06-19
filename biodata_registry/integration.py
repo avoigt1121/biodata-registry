@@ -22,8 +22,9 @@ Resolution order (first failing gate decides; short-circuit on ``refuse``)
 3. feature      no shared gene_symbol space  -> refuse  (NO_SHARED_FEATURE_SPACE)
 4. modality     transcriptome + proteome     -> refuse  (CROSS_MODALITY)   [v1]
 5. data_level   poolable & EQUAL on all       -> early-eligible; else -> late   (D3)
-6. confound     a requested contrast cannot
-                run in any single cohort     -> refuse  (CONFOUNDED_DESIGN)
+6. confound     a requested contrast is confounded with dataset:
+                a cohort supplies neither arm, or no cohort
+                supplies both arms           -> refuse  (CONFOUNDED_DESIGN)
                 else early-eligible -> early; else -> late
 
 ``early`` -> ``late`` downgrades are **not** refusals — they carry a clear
@@ -169,18 +170,28 @@ def _confound_separates(
     control_group: Optional[str],
 ) -> tuple[bool, str]:
     """
-    Does manifest metadata *positively* show the requested contrast is
-    fully confounded with dataset (separable design)?
+    Does manifest metadata *positively* show the requested contrast cannot be run
+    as a valid cross-dataset comparison (confounded with dataset)?
 
-    Conservative on purpose. The contrast is separable only when, for the
-    requested ``design_factor``, **no single cohort can express both arms** and
-    every cohort's arm set is knowable from metadata. If any cohort declares the
-    factor but lists no arms (allowed_values/contrasts absent), we cannot prove
-    separation from metadata and defer to the specialist's runtime check
-    (returns ``(False, "")``).
+    Two distinct ways a contrast is confounded with dataset, both refused here:
 
-    Partial imbalance (one cohort has both arms, another is skewed) is *not*
-    separation — that is exactly what the early-mode batch covariate handles.
+    1. **A cohort contributes neither arm.** If a requested cohort cannot supply
+       *either* arm of the contrast from its metadata — the design factor is
+       absent entirely, or its declared arms are disjoint from the requested
+       pair — then the contrast lives in only a subset of the requested datasets.
+       Combining cannot produce a cross-dataset comparison for it (the "combined"
+       result would be a single cohort relabelled), so refuse. This is the Case-3
+       guard: e.g. a Bailey-subtype contrast across a Bailey-labelled cohort +
+       one with no Bailey labels.
+    2. **No single cohort declares both arms** (perfectly split design): each
+       cohort supplies only one arm, so arm is perfectly aliased with dataset.
+
+    Conservative on purpose. Partial imbalance (one cohort has both arms, another
+    is skewed but still contributes an arm) is *not* separation — that is exactly
+    what the early-mode batch covariate handles. A cohort that declares the factor
+    but lists no arms (allowed_values/contrasts absent) is *unknown*, not absent:
+    we cannot prove confounding from metadata, so we defer to the specialist's
+    runtime check rather than refuse.
 
     Returns ``(separable, detail)`` where ``detail`` summarises per-cohort arms.
     """
@@ -189,28 +200,43 @@ def _confound_separates(
         wanted = {test_group, control_group}
 
     summary: dict[str, object] = {}
-    states: list[Optional[bool]] = []  # True=can run, False=cannot, None=unknown
+    can_run_full: list[Optional[bool]] = []  # supplies BOTH arms (runs contrast alone)
+    contributes: list[Optional[bool]] = []   # supplies >=1 arm (True/False) or unknown
     for m in manifests:
         arms = _declarable_arms(m, design_factor)
         if not arms:
             if _declares_factor(m, design_factor):
                 summary[m.dataset_id] = "<arms unspecified>"
-                states.append(None)              # present but unknowable -> defer
+                can_run_full.append(None)        # present but unknowable -> defer
+                contributes.append(None)
             else:
                 summary[m.dataset_id] = "<factor absent>"
-                states.append(False)             # cannot supply either arm
+                can_run_full.append(False)       # cannot supply either arm
+                contributes.append(False)
             continue
         summary[m.dataset_id] = sorted(arms)
         if wanted is not None:
-            states.append(wanted.issubset(arms))
+            can_run_full.append(wanted.issubset(arms))
+            contributes.append(bool(wanted & arms))   # >=1 of the requested arms
         else:
-            states.append(len(arms) >= 2)        # factor only -> need >=2 arms
+            can_run_full.append(len(arms) >= 2)       # factor only -> need >=2 arms
+            contributes.append(len(arms) >= 1)
 
-    if any(s is True for s in states):
-        return False, ""                         # a cohort can run it -> not broken
-    if any(s is None for s in states):
-        return False, ""                         # insufficient metadata -> defer
     detail = ", ".join(f"{k}={v}" for k, v in summary.items())
+
+    # (1) A cohort that definitively contributes neither arm cannot take part in
+    #     a cross-dataset comparison for this contrast -> confounded with dataset.
+    #     A definite absence is decisive even if another cohort is unknown.
+    if any(c is False for c in contributes):
+        return True, detail
+    # (2) If a cohort can run the full contrast alone, the design is not separable
+    #     across datasets (partial imbalance is the batch covariate's job).
+    if any(s is True for s in can_run_full):
+        return False, ""
+    # Insufficient metadata anywhere -> defer to the specialist's runtime check.
+    if any(s is None for s in can_run_full):
+        return False, ""
+    # Every cohort supplies exactly one (different) arm -> perfectly split.
     return True, detail
 
 
@@ -381,9 +407,10 @@ def plan_for_manifests(
                 mode="refuse",
                 reason=(
                     f"The requested contrast {contrast_desc} is confounded with "
-                    f"dataset: no single cohort declares both arms ({detail}). "
-                    f"Pooling would perfectly confound the biological contrast "
-                    f"with batch. Refusing."
+                    f"dataset: it cannot be run as a valid cross-dataset "
+                    f"comparison because at least one cohort cannot supply both "
+                    f"arms from its metadata ({detail}). The contrast would be "
+                    f"aliased with batch. Refusing."
                 ),
                 per_dataset=per_dataset,
                 shared_feature_space=shared_feature_space,

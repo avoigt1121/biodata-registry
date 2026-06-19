@@ -287,6 +287,92 @@ def test_confound_deferred_when_arms_unspecified():
     assert plan["mode"] != "refuse"
 
 
+def test_factor_absent_in_one_cohort_refused():
+    """A contrast whose factor is absent from one cohort is confounded with
+    dataset -> refuse. The cohort that lacks the factor cannot contribute either
+    arm, so the contrast lives in only the other dataset (a single cohort
+    relabelled). Even though the labelled cohort declares both arms, combining is
+    invalid (this is the case the old 'no cohort declares both arms' rule missed).
+    """
+    labelled = _mk(
+        "syn_subtyped",
+        group_columns=["subtype"],
+        metadata_columns={"subtype": MetadataColumnDef(
+            role="primary_condition",
+            allowed_values=["Squamous", "Pancreatic Progenitor"])},
+    )
+    unlabelled = _mk("syn_no_subtype", group_columns=["stage"])  # no 'subtype'
+    plan = plan_for_manifests(
+        [labelled, unlabelled],
+        design_factor="subtype",
+        test_group="Squamous", control_group="Pancreatic Progenitor",
+    )
+    assert plan["mode"] == "refuse"
+    assert CONFOUNDED_DESIGN in plan["refusal_rules_triggered"]
+
+
+def test_cohort_with_disjoint_arms_refused():
+    """A cohort that declares the factor but none of the requested arms cannot
+    contribute to the contrast -> refuse (neither requested arm is available)."""
+    wanted_cohort = _mk(
+        "syn_has_arms",
+        group_columns=["subtype"],
+        metadata_columns={"subtype": MetadataColumnDef(
+            role="primary_condition",
+            allowed_values=["Squamous", "Pancreatic Progenitor"])},
+    )
+    disjoint_cohort = _mk(
+        "syn_other_arms",
+        group_columns=["subtype"],
+        metadata_columns={"subtype": MetadataColumnDef(
+            role="primary_condition",
+            allowed_values=["Classical", "Basal"])},  # disjoint from requested pair
+    )
+    plan = plan_for_manifests(
+        [wanted_cohort, disjoint_cohort],
+        design_factor="subtype",
+        test_group="Squamous", control_group="Pancreatic Progenitor",
+    )
+    assert plan["mode"] == "refuse"
+    assert CONFOUNDED_DESIGN in plan["refusal_rules_triggered"]
+
+
+def test_bailey_contrast_across_unlabelled_cohort_refused():
+    """Real registered datasets (ADR-0001 Case 3): a Bailey-subtype contrast
+    across paca_au_rnaseq (has membership.ordered) + tcga_paad (does not) is
+    confounded with dataset -> refuse. Without this, the agent would silently
+    produce a paca_au-only result presented as cross-dataset."""
+    plan = get_integration_plan(
+        ["paca_au_rnaseq", "tcga_paad"],
+        design_factor="membership.ordered",
+        test_group="Squamous", control_group="Pancreatic Progenitor",
+    )
+    assert plan["mode"] == "refuse"
+    assert CONFOUNDED_DESIGN in plan["refusal_rules_triggered"]
+
+
+def test_partial_imbalance_not_refused():
+    """One cohort has both arms, the other supplies only one (skewed but
+    contributing) -> NOT a refusal: the early-mode batch covariate handles it."""
+    both = _mk(
+        "syn_full",
+        group_columns=["condition"],
+        metadata_columns={"condition": MetadataColumnDef(
+            role="primary_condition", allowed_values=["tumor", "normal"])},
+    )
+    one_arm = _mk(
+        "syn_skew",
+        group_columns=["condition"],
+        metadata_columns=_single_arm("tumor"),  # contributes the 'tumor' arm only
+    )
+    plan = plan_for_manifests(
+        [both, one_arm],
+        design_factor="condition", test_group="tumor", control_group="normal",
+    )
+    assert plan["mode"] != "refuse"
+    assert CONFOUNDED_DESIGN not in plan["refusal_rules_triggered"]
+
+
 # ---------------------------------------------------------------------------
 # Output contract
 # ---------------------------------------------------------------------------
