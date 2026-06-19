@@ -4,6 +4,35 @@ Last updated: 2026-06-19
 
 ---
 
+## 2026-06-19 session — 0.1.3 released (Gate 6 confound hardening, ADR-0001 Case 3)
+
+Hardened `get_integration_plan`'s confound gate (`_confound_separates`): it now
+refuses (`CONFOUNDED_DESIGN`) when a requested cohort can supply **neither** arm
+of a specified contrast — the design factor is absent from its metadata, or its
+declared arms are disjoint from the requested pair. Previously it refused only
+when *no* cohort could express both arms, so a Bailey-subtype contrast across a
+Bailey-labelled cohort (`paca_au_rnaseq`, has both arms) + an unlabelled one
+(`tcga_paad`, no `membership.ordered`) returned `early` and would silently
+become a single-cohort result. Partial imbalance (one cohort skewed but still
+contributing an arm) is still allowed — the batch covariate's job. Reason text +
+module/function docstrings updated.
+
+- **Tests:** +4 in `test_integration_plan.py` (factor-absent → refuse,
+  disjoint-arms → refuse, real `paca_au_rnaseq`+`tcga_paad` Bailey case →
+  refuse, partial-imbalance → not-refused). 26 integration + full suite 46
+  pass / 1 skip; ruff clean.
+- **Release:** `pyproject.toml` `0.1.2`→`0.1.3`; wheel
+  `biodata_registry-0.1.3-py3-none-any.whl` (sha256
+  `b90f7efc9e5cc776287ae0d5a0278e32266a32c39aa79801dcfb8ed3bdb73e9c`)
+  git-tracked at repo root, pushed to `hf` + `github` (same git-push publish
+  path as 0.1.1/0.1.2 — the HF API token is read-only). Consumer pin
+  (DecoupleRpy_Agent): `.../resolve/<this release commit>/biodata_registry-0.1.3-py3-none-any.whl`.
+- **Why now:** ADR-0001 T6 dev validation (DecoupleRpy_Agent) surfaced that
+  Case 3 returned `early` instead of `refuse`. This closes that gap
+  deterministically at the registry (plan-level), the single source of truth.
+
+---
+
 ## 2026-06-19 session — integration engine merged + released as 0.1.2 (ADR-0001 T2 release)
 
 `feat/integration-plan` **merged to `main`** and **released as wheel `0.1.2`** —
