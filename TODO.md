@@ -34,10 +34,11 @@ pdac-analysis-orchestrator.
 
 ### Manifests / roadmap
 
-- **Cross-reference (DecoupleRpy_Agent) — confirm the dev rebuild on 0.1.4.** The
-  agent re-pinned 0.1.3 → 0.1.4 and pushed to prod (`202ae05`, staged-paused) and
-  dev (`d19bfc9`, 2026-06-22). Dev is rebuilding — verify it reaches RUNNING and
-  the 3 GSE205154 datasets load end-to-end, then promote/unpause prod.
+- **Cross-reference (DecoupleRpy_Agent) — promote 0.1.4 to live prod.** Dev is
+  RUNNING ✅ on 0.1.4 (`d19bfc9`, confirmed 2026-06-22), so the GSE205154 datasets
+  load in the agent. Prod (`202ae05`) has the same pin but is staged-paused on the
+  cpu quota — unpause + free a slot to bring it live. (Optional: drive an
+  end-to-end "list datasets" query on dev for literal 19-dataset confirmation.)
 - **Med — Add a `roadmap` key per manifest** + `scripts/collect_roadmap.py` to
   print a consolidated cross-dataset list of open items. (Paired with the same
   item in DecoupleRpy_Agent/TODO.md.)
