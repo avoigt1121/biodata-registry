@@ -34,13 +34,11 @@ pdac-analysis-orchestrator.
 
 ### Manifests / roadmap
 
-- **High — Re-pin DecoupleRpy_Agent to biodata-registry 0.1.4** so the agent sees
-  the 3 GSE205154 manifests (it still pins 0.1.3). Wheel is released + verified
-  (resolve URL below); the re-pin is to be folded into the agent's in-flight
-  gradio-6 migration (its `requirements.txt`/`.in` are already being changed).
-  Pin:
-  `https://huggingface.co/anne-voigt/biodata-registry/resolve/0feb253d7df8c79341ef6b16f17097221bf4721c/biodata_registry-0.1.4-py3-none-any.whl`
-  `--hash=sha256:9ac0c505d338893b8d5a42d879758ca69c8a4d2b3556b8f66aec19d8f90f8ba0`
+- **Cross-reference (DecoupleRpy_Agent) — validate the 0.1.4 re-pin on a live
+  Space.** The agent re-pinned 0.1.3 → 0.1.4 and pushed to prod (`202ae05`,
+  2026-06-22), but prod is paused (cpu quota) so it hasn't rebuilt, and dev was
+  left on 0.1.3 — so the GSE205154 datasets loading end-to-end in the agent is
+  not yet verified on any Space. Push `hf-dev` (or unpause prod) to confirm.
 - **Med — Add a `roadmap` key per manifest** + `scripts/collect_roadmap.py` to
   print a consolidated cross-dataset list of open items. (Paired with the same
   item in DecoupleRpy_Agent/TODO.md.)
@@ -77,6 +75,9 @@ pdac-analysis-orchestrator.
 
 ## Done (recent)
 
+- 2026-06-22 — **DecoupleRpy_Agent re-pinned to 0.1.4 + pushed to prod** (`202ae05`).
+  Staged-paused (prod on cpu quota); dev left at 0.1.3 → re-pin unvalidated on a
+  live Space yet (see Open cross-ref).
 - 2026-06-22 — **0.1.4 released** (wheel `biodata_registry-0.1.4-py3-none-any.whl`,
   sha256 `9ac0c505…`, 19 manifests incl. the 3 GSE205154). Release commit
   `0feb253`, pushed to `github` + `hf`; resolve URL verified 200 + sha match.

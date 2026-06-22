@@ -23,8 +23,11 @@ read-only API token → wheel is git-tracked at repo root + `git push hf`).
   migration, not done here):**
   `https://huggingface.co/anne-voigt/biodata-registry/resolve/0feb253d7df8c79341ef6b16f17097221bf4721c/biodata_registry-0.1.4-py3-none-any.whl`
   `--hash=sha256:9ac0c505d338893b8d5a42d879758ca69c8a4d2b3556b8f66aec19d8f90f8ba0`
-- **Still open:** the agent still pins 0.1.3; re-pin + deploy happens with the
-  gradio-6 migration release (its `requirements.txt`/`.in` are already in flight).
+- **Re-pin DONE (2026-06-22):** the gradio-6 migration had already shipped, so
+  the re-pin was done standalone — DecoupleRpy_Agent `requirements.txt`/`.in`
+  bumped 0.1.3 → 0.1.4 and pushed to prod (`202ae05`). ⚠️ Staged-paused (prod on
+  cpu quota, no rebuild yet) and dev left at 0.1.3 → not yet validated on a live
+  Space.
 
 ---
 
