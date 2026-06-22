@@ -34,11 +34,13 @@ pdac-analysis-orchestrator.
 
 ### Manifests / roadmap
 
-- **High — After the h5ads land: release a new wheel + re-pin the consumer.**
-  Bump `pyproject.toml`, build wheel, `git push hf`, then re-pin
-  DecoupleRpy_Agent's `requirements.txt`/`.in` (or pin a git commit) so the agent
-  picks up the 3 new manifests. Also set `BIODATA_REGISTRY_COMMIT` in
-  `DecoupleRpy_Agent/scripts/_gse205154_sears_common.py` to the manifests' commit.
+- **High — Re-pin DecoupleRpy_Agent to biodata-registry 0.1.4** so the agent sees
+  the 3 GSE205154 manifests (it still pins 0.1.3). Wheel is released + verified
+  (resolve URL below); the re-pin is to be folded into the agent's in-flight
+  gradio-6 migration (its `requirements.txt`/`.in` are already being changed).
+  Pin:
+  `https://huggingface.co/anne-voigt/biodata-registry/resolve/0feb253d7df8c79341ef6b16f17097221bf4721c/biodata_registry-0.1.4-py3-none-any.whl`
+  `--hash=sha256:9ac0c505d338893b8d5a42d879758ca69c8a4d2b3556b8f66aec19d8f90f8ba0`
 - **Med — Add a `roadmap` key per manifest** + `scripts/collect_roadmap.py` to
   print a consolidated cross-dataset list of open items. (Paired with the same
   item in DecoupleRpy_Agent/TODO.md.)
@@ -75,6 +77,10 @@ pdac-analysis-orchestrator.
 
 ## Done (recent)
 
+- 2026-06-22 — **0.1.4 released** (wheel `biodata_registry-0.1.4-py3-none-any.whl`,
+  sha256 `9ac0c505…`, 19 manifests incl. the 3 GSE205154). Release commit
+  `0feb253`, pushed to `github` + `hf`; resolve URL verified 200 + sha match.
+  Consumer re-pin pending (folds into the agent's gradio-6 migration).
 - 2026-06-22 — **GSE205154 (Sears) 3 h5ads uploaded + live.** Built via the
   assemble scripts, published to `anne-voigt/pdac-research-data` via `git push`
   (API token read-only / PR-blocked → 403; git push has write, same as the

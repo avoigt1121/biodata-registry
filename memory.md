@@ -4,6 +4,30 @@ Last updated: 2026-06-22
 
 ---
 
+## 2026-06-22 session — 0.1.4 released (GSE205154 manifests in a consumable wheel)
+
+Cut **0.1.4** so the 3 GSE205154 manifests ship in a wheel. Same publish path as
+0.1.1–0.1.3 (the `huggingface-cli upload` in `scripts/release.sh` 403s on the
+read-only API token → wheel is git-tracked at repo root + `git push hf`).
+
+- **Wheel** `biodata_registry-0.1.4-py3-none-any.whl`, **sha256
+  `9ac0c505d338893b8d5a42d879758ca69c8a4d2b3556b8f66aec19d8f90f8ba0`**, bundles
+  **19 manifests** (incl. the 3 GSE205154). Built with `uv build`.
+- **Release commit `0feb253`** (pyproject `0.1.3`→`0.1.4` + wheel); pushed to
+  **both** `github` (`a6e46c9..0feb253`) and `hf` (`5654e86..0feb253`, the wheel
+  host the resolve URL serves).
+- **Verified:** isolated `uv pip install` of the wheel → version 0.1.4, 19
+  datasets, the 3 GSE205154 load + validate, `get_integration_plan` importable.
+  Resolve URL returns 200 + matching sha.
+- **Consumer pin (DecoupleRpy_Agent re-pins to this — folded into the gradio-6
+  migration, not done here):**
+  `https://huggingface.co/anne-voigt/biodata-registry/resolve/0feb253d7df8c79341ef6b16f17097221bf4721c/biodata_registry-0.1.4-py3-none-any.whl`
+  `--hash=sha256:9ac0c505d338893b8d5a42d879758ca69c8a4d2b3556b8f66aec19d8f90f8ba0`
+- **Still open:** the agent still pins 0.1.3; re-pin + deploy happens with the
+  gradio-6 migration release (its `requirements.txt`/`.in` are already in flight).
+
+---
+
 ## 2026-06-22 session — GSE205154 h5ads uploaded (3 variants now LIVE); manifests de-placeholdered
 
 The 3 GSE205154 (Sears) h5ads were built and **uploaded to
