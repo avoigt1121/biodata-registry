@@ -93,11 +93,12 @@ expression_source:
   url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse205154_sears.h5ad"
   format: h5ad
   note: >
-    PLACEHOLDER — the pre-assembled h5ad has not been built/uploaded yet.
-    Intended contents: gene-level TPM matrix (289 samples x genes) from
-    GSE205154_Gene_Level_TPM_Estimates.txt.gz with embedded obs metadata.
-    Until this file is uploaded to anne-voigt/pdac-research-data this URL will
-    404; assemble from original_source below. See TODO/REGISTRY_TODO_PLANS.md.
+    Pre-assembled h5ad: gene-level TPM matrix (289 samples x 60554 genes,
+    float32) from GSE205154_Gene_Level_TPM_Estimates.txt.gz with embedded obs
+    metadata. Uploaded to anne-voigt/pdac-research-data 2026-06-22 (URL verified
+    HTTP 200). Rebuild via
+    DecoupleRpy_Agent/scripts/assemble_gse205154_sears.py (source =
+    original_source below).
 
 original_source:
   type: url
@@ -273,10 +274,6 @@ limitations:
     interpret low-expression genes cautiously."
   - "Metastatic samples (n=71) span several anatomical sites; many sites are
     singletons. Most `tissue` groups are too small for DE on their own."
-  - "PLACEHOLDER expression_source: the pre-assembled h5ad at
-    anne-voigt/pdac-research-data/gse205154_sears.h5ad has not been built or
-    uploaded yet; the URL will 404 until it is. Assemble from the GEO TPM
-    supplementary file (original_source)."
   - "Feature IDs are versioned Ensembl gene IDs (confirmed from the TPM matrix).
     At assembly, strip or retain the version suffix consistently and expose HGNC
     symbols as var['SYMBOL'] from the hgnc_symbol column for decoupler tools."

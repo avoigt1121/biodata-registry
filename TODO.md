@@ -34,12 +34,6 @@ pdac-analysis-orchestrator.
 
 ### Manifests / roadmap
 
-- **High — Build + upload the 3 GSE205154 (Sears) h5ads.** `gse205154_sears`,
-  `gse205154_sears_counts`, `gse205154_sears_tmm` are registered but their
-  `expression_source` URLs are PLACEHOLDERS (404 until built). Run
-  `DecoupleRpy_Agent/scripts/assemble_gse205154_sears{,_counts,_tmm}.py`
-  (without `--dry-run`; needs HF auth) to publish to `anne-voigt/pdac-research-data`.
-  Dry-run already verified (289 × 60554). Until done, these 3 datasets load → 404.
 - **High — After the h5ads land: release a new wheel + re-pin the consumer.**
   Bump `pyproject.toml`, build wheel, `git push hf`, then re-pin
   DecoupleRpy_Agent's `requirements.txt`/`.in` (or pin a git commit) so the agent
@@ -81,6 +75,15 @@ pdac-analysis-orchestrator.
 
 ## Done (recent)
 
+- 2026-06-22 — **GSE205154 (Sears) 3 h5ads uploaded + live.** Built via the
+  assemble scripts, published to `anne-voigt/pdac-research-data` via `git push`
+  (API token read-only / PR-blocked → 403; git push has write, same as the
+  wheels). All 3 resolve URLs verified 200; manifests de-placeholdered. Remaining:
+  wheel + consumer re-pin (above).
+- 2026-06-21 — **GSE205154 (Sears/OHSU) bulk RNA-seq added** — 3 manifests
+  (`gse205154_sears` TPM / `_counts` DESeq2 / `_tmm`), registry → 19. Assembly
+  scripts in DecoupleRpy_Agent; 7 `anni-voigt` script refs reconciled to
+  `anne-voigt`. Pushed to `github` (`533906d`).
 - 2026-06-19 — **Integration engine merged + released as wheel 0.1.2** (closes
   ADR-0001 T2 release). `feat/integration-plan` fast-forwarded into `main`;
   pushed to `github` (PR closed) and `hf` (`cbc083a`). Consumer pin:

@@ -1,6 +1,38 @@
 # memory.md — biodata-registry Working State
 
-Last updated: 2026-06-21
+Last updated: 2026-06-22
+
+---
+
+## 2026-06-22 session — GSE205154 h5ads uploaded (3 variants now LIVE); manifests de-placeholdered
+
+The 3 GSE205154 (Sears) h5ads were built and **uploaded to
+`anne-voigt/pdac-research-data`** — the 3 datasets are now loadable (the
+expression_source URLs were placeholders until today).
+
+- **Upload mechanism (important — same read-only-API gotcha as the wheels):** the
+  cached `huggingface_hub` API token is **read-only** on the dataset repo — both a
+  direct commit AND a `create_pr=1` PR return **403**. **`git push` has write**
+  (verified via an empty-commit `--dry-run`), so the h5ads were published the same
+  way the wheels are: `GIT_LFS_SKIP_SMUDGE=1` shallow-clone of
+  `huggingface.co/datasets/anne-voigt/pdac-research-data`, `git lfs track` the 3
+  new filenames (the repo tracks `.h5ad` by explicit filename, not a `*.h5ad`
+  glob — must add each), copy files in, commit, `git push origin main`
+  (`aadc2a0..ff14b87`, 256 MB LFS). Built via the assemble scripts' `--dry-run`
+  (writes locally, skips the failing API upload).
+- **Verified:** all 3 resolve URLs return **HTTP 200** with exact built sizes
+  (`gse205154_sears` / `_counts` 85385414 B, `_tmm` 85446304 B); local builds
+  load as 289 × 60554 AnnData (obs tumor_type/tissue/cell_type/sample_title,
+  var.index = versioned Ensembl, var['SYMBOL']).
+- **Manifests de-placeholdered:** removed the "PLACEHOLDER … URL will 404"
+  language from all 3 `expression_source.note` blocks + dropped the matching
+  placeholder limitation bullet; notes now record the 2026-06-22 upload + rebuild
+  script. Still validate clean (0 errors); 45 pass / 2 skip.
+- **`BIODATA_REGISTRY_COMMIT`** in `DecoupleRpy_Agent/scripts/_gse205154_sears_common.py`
+  set to `533906d` (committed locally on the agent's `fix/gradio-6-migration`).
+- **Still pending:** cut a new wheel + re-pin DecoupleRpy_Agent so the agent
+  *sees* these 3 (it still pins 0.1.3). Gated on the agent's in-flight gradio-6
+  migration / paused prod Space — not done this session.
 
 ---
 

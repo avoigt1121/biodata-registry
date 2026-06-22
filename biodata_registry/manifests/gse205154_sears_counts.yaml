@@ -80,11 +80,12 @@ expression_source:
   url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/gse205154_sears_counts.h5ad"
   format: h5ad
   note: >
-    PLACEHOLDER — the pre-assembled h5ad has not been built/uploaded yet.
-    Intended contents: gene-level estimated counts rounded to int32 (289 samples
-    x genes) from GSE205154_Gene_Level_Counts_Estimates.txt.gz with embedded obs
-    metadata. Until uploaded to anne-voigt/pdac-research-data this URL will 404;
-    assemble from original_source below. See REGISTRY_TODO_PLANS.md.
+    Pre-assembled h5ad: gene-level estimated counts rounded to int32 (289
+    samples x 60554 genes) from GSE205154_Gene_Level_Counts_Estimates.txt.gz with
+    embedded obs metadata. Uploaded to anne-voigt/pdac-research-data 2026-06-22
+    (URL verified HTTP 200). Rebuild via
+    DecoupleRpy_Agent/scripts/assemble_gse205154_sears_counts.py (source =
+    original_source below).
 
 original_source:
   type: url
@@ -262,10 +263,6 @@ limitations:
     singletons. Most `tissue` groups are too small for DE on their own."
   - "Same 289 samples as gse205154_sears (TPM) and gse205154_sears_tmm (TMM).
     Choose ONE variant per analysis; never pool them."
-  - "PLACEHOLDER expression_source: the pre-assembled h5ad at
-    anne-voigt/pdac-research-data/gse205154_sears_counts.h5ad has not been built
-    or uploaded yet; the URL will 404 until it is. Assemble from the GEO counts
-    supplementary file (original_source)."
   - "7 of the 289 samples carry an -F (fibroblast) name suffix yet are annotated
     `cell type: scraped tumor` and `tumor type: Primary` in GEO. Treat these as
     possibly non-epithelial/fibroblast and exclude or inspect them before
