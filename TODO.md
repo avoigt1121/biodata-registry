@@ -75,6 +75,13 @@ pdac-analysis-orchestrator.
 
 ## Done (recent)
 
+- 2026-06-22 — **0.1.5 released — per-dataset `preprocessing` field (Item 3).**
+  New optional `preprocessing: str` on the schema (wired through `from_dict`/
+  `to_dict`), populated in all 19 manifests, surfaced in
+  `list_available_datasets()`. Release commit `b46392c` (wheel sha256
+  `958f498b…`), pushed github + hf; resolve URL verified 200 + sha match.
+  45 pass / 2 skip. Consumer re-pin (DecoupleRpy_Agent 0.1.4 → 0.1.5, folds in
+  the pending Sears bump) done same session.
 - 2026-06-22 — **DecoupleRpy_Agent re-pinned to 0.1.4 + pushed to prod** (`202ae05`).
   Staged-paused (prod on cpu quota); dev left at 0.1.3 → re-pin unvalidated on a
   live Space yet (see Open cross-ref).

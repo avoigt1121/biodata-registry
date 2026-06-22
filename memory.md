@@ -4,6 +4,39 @@ Last updated: 2026-06-22
 
 ---
 
+## 2026-06-22 session — 0.1.5 released (per-dataset `preprocessing` field — Item 3)
+
+Added a new optional structured manifest field **`preprocessing: str`** (plain-language
+provenance) and cut **0.1.5**. Same git-push publish path as 0.1.1–0.1.4.
+
+- **Schema** (`manifest_schema.py`): new `preprocessing: str = ""` field on
+  `DatasetManifest`, wired through `from_dict` (`d.get("preprocessing") or ""`),
+  `to_dict`, the field-reference docstring, and the dataclass. Optional /
+  back-compatible — a manifest with no `preprocessing` key still validates.
+- **`registry.py::list_available_datasets()`**: each entry now carries
+  `"preprocessing": raw.get("preprocessing", "")`.
+- **All 19 manifest YAMLs**: populated `preprocessing:` (folded scalar, inserted
+  before `publication:`) with 1–3 sentences distilled from each file's header
+  comments + `expression_source.note` / `data_level` comments — raw data,
+  normalization/transform/units, feature-ID handling (probe collapse, symbol
+  mapping), curation/subsetting, and Path A/B. No invented details.
+- **Tests:** `pytest -q` → **45 passed, 2 skipped** (the fastmcp + live-data
+  skips, unchanged). Verified all 19 datasets report a non-empty `preprocessing`
+  and `to_dict()` round-trips the key.
+- **Release commit `b46392c`** (pyproject `0.1.4`→`0.1.5` + wheel); pushed to
+  **both** `github` (`7f9ab59..b46392c`) and `hf` (`7f9ab59..b46392c`).
+- **Wheel** `biodata_registry-0.1.5-py3-none-any.whl`, **sha256
+  `958f498b7880aef0d4558b102534ad357f850dd6b5755c2808c78973acfc05ec`**, 19
+  manifests. Built with `uv build`. Isolated `uv pip install` → version 0.1.5,
+  19 datasets, all `preprocessing` present, `get_integration_plan` importable.
+- **Consumer pin (DecoupleRpy_Agent re-pins 0.1.4 → 0.1.5, folds in the pending
+  Sears 0.1.4 bump):**
+  `https://huggingface.co/anne-voigt/biodata-registry/resolve/b46392c86a6d3d3a5a9ead8593e9f400131f699c/biodata_registry-0.1.5-py3-none-any.whl`
+  `--hash=sha256:958f498b7880aef0d4558b102534ad357f850dd6b5755c2808c78973acfc05ec`
+  Resolve URL verified **HTTP 200** + sha match.
+
+---
+
 ## 2026-06-22 session — 0.1.4 released (GSE205154 manifests in a consumable wheel)
 
 Cut **0.1.4** so the 3 GSE205154 manifests ship in a wheel. Same publish path as
