@@ -34,6 +34,17 @@ pdac-analysis-orchestrator.
 
 ### Manifests / roadmap
 
+- **High — Build + upload the 3 GSE205154 (Sears) h5ads.** `gse205154_sears`,
+  `gse205154_sears_counts`, `gse205154_sears_tmm` are registered but their
+  `expression_source` URLs are PLACEHOLDERS (404 until built). Run
+  `DecoupleRpy_Agent/scripts/assemble_gse205154_sears{,_counts,_tmm}.py`
+  (without `--dry-run`; needs HF auth) to publish to `anne-voigt/pdac-research-data`.
+  Dry-run already verified (289 × 60554). Until done, these 3 datasets load → 404.
+- **High — After the h5ads land: release a new wheel + re-pin the consumer.**
+  Bump `pyproject.toml`, build wheel, `git push hf`, then re-pin
+  DecoupleRpy_Agent's `requirements.txt`/`.in` (or pin a git commit) so the agent
+  picks up the 3 new manifests. Also set `BIODATA_REGISTRY_COMMIT` in
+  `DecoupleRpy_Agent/scripts/_gse205154_sears_common.py` to the manifests' commit.
 - **Med — Add a `roadmap` key per manifest** + `scripts/collect_roadmap.py` to
   print a consolidated cross-dataset list of open items. (Paired with the same
   item in DecoupleRpy_Agent/TODO.md.)

@@ -1,6 +1,57 @@
 # memory.md — biodata-registry Working State
 
-Last updated: 2026-06-19
+Last updated: 2026-06-21
+
+---
+
+## 2026-06-21 session — GSE205154 (Sears lab, OHSU) bulk RNA-seq added (3 variants) + anni-voigt script reconciliation
+
+Added the Sears lab PDAC bulk RNA-seq cohort — **GSE205154**, the bulk-RNA-seq
+subseries of SuperSeries **GSE281129** (PMID 39789181, Brenden-Colson Center /
+OHSU). 289 FFPE primary + metastatic PDAC tumors. **Registry now has 19
+manifests.** (The other GSE281129 subseries, GSE281005, is TCRβ-seq — no
+expression modality, out of scope.)
+
+- **3 sibling manifests — one 289-sample cohort, three quantifications (never pool):**
+  - `gse205154_sears` — gene-level TPM → `tpm`, Path B (limma/ttest)
+  - `gse205154_sears_counts` — tximport estimated counts rounded int32 → `raw_counts`, Path A (DESeq2)
+  - `gse205154_sears_tmm` — edgeR TMM (not log-scaled) → `normalized`, Path B
+  All three: `bulk_rnaseq`, human, `feature_id_type: ensembl_gene_id` (versioned
+  ENSG in var.index, HGNC in `var['SYMBOL']`), obs indexed by GSM with tumor_type
+  (Primary 218 / Met 71), tissue (anatomical site), cell_type, sample_title.
+  Validate clean (0 errors / 0 warnings); offline suite 45 pass / 2 skip.
+- **Key refusal baked in:** the liver-vs-lung metastatic-tropism grouping that
+  defines the paper's signature is **NOT in GEO metadata** (clinical chart review;
+  raw data dbGaP phs003597). Manifests refuse to fabricate it from
+  `tissue`/`tumor_type`. No survival fields deposited → survival workflow disabled.
+- **Caveats encoded:** 7/289 samples are `-F` (fibroblast) suffixed yet
+  GEO-annotated "scraped tumor"/"Primary"; `tissue` has a LymphNode/Lymph Node
+  split + one NA; the counts variant notes that rounding kallisto estimates is an
+  approximation of the proper tximport→DESeq2 length-offset workflow; TMM carries
+  the `TMM_pass_filter` gene flag into var.
+- **expression_source = PLACEHOLDER HF URLs** (`gse205154_sears*.h5ad` at
+  `anne-voigt/pdac-research-data`) — **not built/uploaded yet; URLs 404 until
+  then.** These 3 datasets are registered but not yet usable.
+- **Assembly scripts written (`DecoupleRpy_Agent/scripts/`):**
+  `_gse205154_sears_common.py` (shared builder — supplementary-TSV → AnnData,
+  joins GEO obs by `!Sample_title` == ST-id) + 3 thin wrappers
+  `assemble_gse205154_sears{,_counts,_tmm}.py`. Verified end-to-end via
+  `--dry-run` (289 × 60554, correct dtypes, provenance stamped to `.uns`); the
+  upload step needs HF auth. NB: those files are committed **on the agent's
+  `fix/gradio-6-migration` branch** (it had unrelated gradio WIP); agent repo not
+  pushed (origin = prod Space).
+- **anni-voigt → anne-voigt reconciliation:** the 2026-06-12 note claimed "no
+  anni-voigt references remain", but 7 `assemble_*.py` still hardcoded
+  `anni-voigt/pdac-research-data` (worked only via HF's username redirect — both
+  resolve to the *same* file, confirmed identical size). Fixed in
+  `assemble_{gse15471,gse17891,cptac_pda,paca_ca,gse21501,gse57495,nones}.py`.
+  Now genuinely none remain.
+- **Pending follow-ups:** (1) build + upload the 3 h5ads (run scripts without
+  `--dry-run`, needs HF auth); (2) release a new wheel + re-pin DecoupleRpy_Agent
+  (or pin a git commit) so the agent can consume them; (3) set
+  `BIODATA_REGISTRY_COMMIT` in the shared builder to the manifests' commit hash.
+- **Pushed to `github` (`avoigt1121/biodata-registry`).** HF wheel host
+  (`origin`/`hf`) NOT bumped — no wheel cut this session.
 
 ---
 
