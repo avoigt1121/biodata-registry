@@ -44,6 +44,14 @@ description: >
   available (mostly Stage IIB/IIA). Dataset used in PDAC subtype benchmarking.
   All samples are tumor; no normal tissue included.
 
+preprocessing: >
+  Pre-assembled from the GEO series matrix: GPL15048 (Affymetrix Human Exon 1.0
+  ST, reannotated) single-channel log2-normalized intensities (range 1.46–15.06;
+  63 PDAC tumors x 60607 probes). var.index holds GPL15048 probe IDs; HGNC
+  symbols are in var['gene_symbol'] (41024/60607 probes mapped); probe collapse
+  is required before enrichment. All samples are tumor with overall survival.
+  Path B (limma/ttest).
+
 publication:
   doi: null
   note: >

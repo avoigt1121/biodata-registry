@@ -39,6 +39,13 @@ description: >
   IMPORTANT: GEO series matrix is in linear-scale normalized form (NOT log2).
   Log2-transform before differential expression analysis.
 
+preprocessing: >
+  Pre-assembled from the GEO series matrix: Affymetrix U133 Plus 2.0 (GPL570)
+  expression on a linear (NOT log2) scale, values ~2–65000 (52 samples x 54613
+  probes). Must be log2-transformed before differential expression. var.index
+  holds GPL570 probe IDs; HGNC symbols are precomputed into var['Gene Symbol']
+  via GPL570 annotation (83.8% coverage). Path B (limma/ttest after log2).
+
 publication:
   doi: ""
   authors: "Pei H et al."

@@ -54,6 +54,13 @@ description: >
   tumor grade, KRAS mutation status, ESTIMATE immune/stromal scores.
   Companion array dataset to paca_au_rnaseq (same cohort, different platform).
 
+preprocessing: >
+  Pre-assembled from pdacR's PACA_AU_array.rds (ICGC PACA-AU, Australian cohort;
+  Bailey 2016): Illumina HumanHT-12 v4 log2-normalized intensities (range ~1–14;
+  131 samples x 21167 genes). Probes were already collapsed to HGNC gene symbols
+  by pdacR (var.index) — no further collapse needed. Bailey four-subtype labels
+  are in membership.ordered (89/131 labeled). Path B (limma/ttest).
+
 publication:
   doi: "10.1038/nature16965"
   authors: "Bailey P et al."

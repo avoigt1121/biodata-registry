@@ -63,6 +63,16 @@ description: >
   pathologic stage. Survival and prognostic analyses require curation to
   PDAC-only samples — see refusal_rules.
 
+preprocessing: >
+  Raw integer counts from the GDC harmonized STAR-Counts pipeline (hg38,
+  GENCODE v36), downloaded per-sample via the open-access GDC bulk data API.
+  Gene symbols are extracted from the gene_name column of the STAR-Counts TSVs
+  (var.index); version-stripped Ensembl IDs are retained in var['ensembl_id'].
+  No probe collapse. Clinical/survival fields are joined from the UCSC Xena
+  legacy PAAD clinical matrix by sample barcode. A curated 150-sample PDAC-only
+  subset (Knudsen et al. 2019) is applied automatically before survival
+  analyses. Path A (raw counts → DESeq2).
+
 publication:
   doi: "10.1038/ng.2764"
   authors: "TCGA Research Network"

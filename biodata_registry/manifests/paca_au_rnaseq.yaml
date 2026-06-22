@@ -54,6 +54,14 @@ description: >
   tumor grade, KRAS mutation status, ESTIMATE immune/stromal scores.
   Mixed histology: 69 PDAC, 12 IPMN, 4 adenosquamous, 7 other — filter by HistoSubtype.
 
+preprocessing: >
+  Pre-assembled from pdacR's PACA_AU_seq.rds (ICGC PACA-AU, Australian cohort;
+  Bailey 2016): RSEM expected_counts rounded to int32 for DESeq2 compatibility
+  (92 samples x 32192 genes). Gene symbols are taken from the pdacR featInfo
+  SYMBOL column and de-duplicated by max mean expression (var.index); no probe
+  collapse. Bailey four-subtype labels are in membership.ordered (70/92 labeled).
+  Path A (raw counts → DESeq2).
+
 publication:
   doi: "10.1038/nature16965"
   authors: "Bailey P et al."

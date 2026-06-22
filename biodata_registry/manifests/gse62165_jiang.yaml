@@ -33,6 +33,13 @@ description: >
   131 samples: 118 PDAC whole-tumor tissue and 13 non-tumoral pancreatic controls.
   Largest of the four PDAC cohorts. Contains staging information (Stage, grouped stage).
 
+preprocessing: >
+  Pre-assembled from the GEO series matrix: Affymetrix U219 (GPL13667)
+  RMA-normalized log2 expression (131 samples x 49386 probes). var.index holds
+  GPL13667 probe IDs; HGNC symbols are precomputed into var['Gene Symbol'] via
+  GPL13667 annotation (100% coverage) so the collapse step needs no separate
+  GPL-annotation call. Path B (limma/ttest).
+
 publication:
   doi: ""
   authors: "Jiang W et al."

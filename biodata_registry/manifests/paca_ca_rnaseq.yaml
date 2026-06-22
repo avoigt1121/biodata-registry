@@ -60,6 +60,13 @@ description: >
   int32 for DESeq2. Survival data available for ~81% of samples (survivalA).
   No Moffitt or Bailey subtype annotations. Source: pdacR v0.1.2.
 
+preprocessing: >
+  Pre-assembled from pdacR's PACA_CA_seq.rds (ICGC PACA-CA, Canadian cohort):
+  RSEM expected_counts rounded to int32 for DESeq2 compatibility (262 samples x
+  65802 genes). var.index holds Ensembl gene IDs; HGNC symbols are in
+  var['SYMBOL']; no probe collapse. No Moffitt or Bailey subtype labels — subtype
+  classification requires a separate step. Path A (raw counts → DESeq2).
+
 publication:
   doi: null
   note: >

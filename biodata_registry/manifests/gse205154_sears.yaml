@@ -76,6 +76,15 @@ description: >
   pathways and patient outcome, but those tropism labels and survival endpoints
   are not part of the deposited GEO metadata (raw data: dbGaP phs003597).
 
+preprocessing: >
+  FFPE tumor RNA pseudoaligned with kallisto v0.44.0 (GRCh38.p5 / GENCODE v24)
+  and summarised to gene-level TPM with tximport (289 samples x 60554 genes).
+  var.index holds versioned Ensembl gene IDs (e.g. ENSG00000000003.14); HGNC
+  symbols are exposed as var['SYMBOL']; no probe collapse. This is the TPM
+  variant — log-transform before limma/ttest; do not run DESeq2 (use the counts
+  sibling). Liver-vs-lung tropism labels and survival are not in the GEO
+  metadata. Path B (limma/ttest).
+
 publication:
   pmid: "39789181"
   authors: "Sears RC, et al. (Brenden-Colson Center for Pancreatic Care, OHSU)"

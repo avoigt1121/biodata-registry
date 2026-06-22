@@ -44,6 +44,14 @@ description: >
   and note the pairing in result summaries. Survival data present (45 pairs,
   cancer_death: 0/1/na, survival_month in integer months).
 
+preprocessing: >
+  Pre-assembled from the GEO series matrix: Affymetrix Human Gene 1.0 ST
+  (GPL6244) RMA-normalized log2 expression (90 samples x 28869 probesets).
+  var.index holds 7-digit GPL6244 numeric (Entrez-style) probeset IDs, not gene
+  symbols; HGNC symbols are precomputed into var['gene_symbol'] from GPL6244's
+  gene_assignment column (87.6% coverage) so the collapse step needs no separate
+  GPL-annotation call. Path B (limma/ttest).
+
 publication:
   doi: ""
   authors: "Zhang G et al."

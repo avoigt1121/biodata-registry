@@ -50,6 +50,15 @@ description: >
   classical, exocrine-like) are curated from the paper's Supplementary Table 2
   and provided in obs['collisson_subtype'].
 
+preprocessing: >
+  Pre-assembled from the GEO series matrix: Affymetrix U133 Plus 2.0 (GPL570)
+  RMA-normalized log2 expression (range −7.99–14.95; 47 human samples x 54675
+  probes); mouse GPL8321 samples were excluded at assembly. var.index holds
+  GPL570 probe IDs; HGNC symbols are in var['gene_symbol'] (45782/54675 mapped);
+  probe collapse is required before enrichment. Collisson subtypes (not in GEO)
+  were curated from the paper's Supplementary Table 2 into obs['collisson_subtype'].
+  Path B (limma/ttest).
+
 publication:
   doi: "10.1038/nm.2344"
   authors: "Collisson EA, Sadanandam A, Olson P, et al."

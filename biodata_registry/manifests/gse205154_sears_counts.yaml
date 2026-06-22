@@ -63,6 +63,15 @@ description: >
   share the same samples — see sibling manifests gse205154_sears (TPM) and
   gse205154_sears_tmm (TMM).
 
+preprocessing: >
+  Same cohort and pipeline as gse205154_sears (kallisto v0.44.0,
+  GRCh38.p5 / GENCODE v24, tximport gene-level): tximport estimated counts
+  rounded to int32 at assembly for DESeq2 compatibility (289 samples x 60554
+  genes). The raw tximport estimates are non-integer; rounding them is an
+  approximation of the proper tximport→DESeq2 length-offset workflow. var.index
+  holds versioned Ensembl gene IDs; HGNC symbols are in var['SYMBOL']; no probe
+  collapse. Path A (raw counts → DESeq2).
+
 publication:
   pmid: "39789181"
   authors: "Sears RC, et al. (Brenden-Colson Center for Pancreatic Care, OHSU)"

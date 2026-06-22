@@ -49,6 +49,14 @@ description: >
   Values are log2 ratios; probe collapse to gene symbols required before analysis.
   Survival data described in the paper is not deposited in GEO.
 
+preprocessing: >
+  Pre-assembled from the GEO series matrix: Agilent two-color 4x44K G4112F
+  (GPL4133) log2 ratios of the test channel over Stratagene Universal Human
+  Reference RNA (range −11.33–11.67; negative values are expected; 132 samples).
+  GPL4133 probes were collapsed to 19749 HGNC gene symbols by mean across
+  duplicate probes at assembly (var.index) — no further collapse needed. Do not
+  back-transform or re-normalize. Path B (limma/ttest).
+
 publication:
   doi: "10.1371/journal.pmed.1000307"
   authors: "Stratford JK, Bentrem DJ, Anderson JM, et al."

@@ -36,6 +36,13 @@ description: >
   Dataset contains heterogeneous sample origins; tumor subtypes are a subset
   of annotated samples. Expression values are log2-normalised; do not re-normalise.
 
+preprocessing: >
+  Pre-assembled from the GEO series matrix into an h5ad of single-channel
+  Agilent (8x60K) log2-normalized intensities (357 samples x 19749 genes). The
+  original depositors collapsed probes to genes before GEO submission, so
+  var.index already holds HGNC gene symbols — no probe collapse is needed.
+  Values are pre-normalized log2; do not re-normalize. Path B (limma/ttest).
+
 publication:
   doi: "10.1038/ng.3398"
   authors: "Moffitt RA, Marayati R, Flate EL, et al."

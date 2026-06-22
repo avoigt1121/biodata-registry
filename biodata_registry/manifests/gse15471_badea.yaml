@@ -42,6 +42,14 @@ description: >
   Affymetrix GPL570 platform, RMA-normalized log2 expression.
   Normal samples are adjacent non-tumor pancreatic tissue, not healthy donor pancreas.
 
+preprocessing: >
+  Pre-assembled from the GEO series matrix: Affymetrix U133 Plus 2.0 (GPL570)
+  RMA-normalized log2 intensities (range 2.14–14.79; 78 samples x 54675 probes).
+  var.index holds GPL570 probe IDs with HGNC symbols pre-mapped into
+  var['gene_symbol']; probe-to-gene collapse is required before enrichment.
+  'Normal' samples are adjacent non-tumor tissue, not healthy donor pancreas.
+  Path B (limma/ttest).
+
 publication:
   doi: "10.1002/hep.22456"
   authors: "Badea L, Herlea V, Dima SO, Dumitrascu T, Popescu I"

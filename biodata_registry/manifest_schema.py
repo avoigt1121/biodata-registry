@@ -39,6 +39,9 @@ feature_mapping   dict  Probe→gene collapse params. Required when
 survival_columns  dict  {event_column, time_column} — None values are fine.
 default_contrasts list  [{design_factor, test_group, control_group, method}]
 description       str   One-sentence plain-language summary.
+preprocessing     str   Plain-language provenance: what the raw data was, what
+                        normalization/transform/units, feature-ID handling, and
+                        any curation/subsetting applied to produce the hosted data.
 publication       dict  {doi, authors, year, journal, title}
 
 Derived (not stored)
@@ -256,6 +259,8 @@ class DatasetManifest:
 
     # Optional: display / citation
     description: str = ""
+    # Optional: plain-language provenance / how the hosted data was prepared
+    preprocessing: str = ""
     publication: dict = field(default_factory=dict)
 
     # Optional: proactive data-quality disclaimer shown at load time
@@ -333,6 +338,7 @@ class DatasetManifest:
             reporting_rules=list(d.get("reporting_rules") or []),
             refusal_rules=list(d.get("refusal_rules") or []),
             description=str(d.get("description") or ""),
+            preprocessing=str(d.get("preprocessing") or ""),
             publication=dict(d.get("publication") or {}),
             dataset_disclaimer=str(d.get("dataset_disclaimer") or ""),
             curated_sample_list=list(d.get("curated_sample_list") or []),
@@ -369,6 +375,7 @@ class DatasetManifest:
             "reporting_rules": self.reporting_rules,
             "refusal_rules": self.refusal_rules,
             "description": self.description,
+            "preprocessing": self.preprocessing,
             "publication": self.publication,
             "dataset_disclaimer": self.dataset_disclaimer,
             "curated_sample_list": self.curated_sample_list,

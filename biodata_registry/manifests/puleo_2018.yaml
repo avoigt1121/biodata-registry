@@ -59,6 +59,14 @@ description: >
   Clinical metadata includes KRAS/TP53/CDKN2a mutation status, TNM grade,
   tumor grade, resection margin, clinical center.
 
+preprocessing: >
+  Pre-assembled from pdacR's Puleo_array.rds (Affymetrix Human Exon 1.0 ST):
+  pre-normalized expression with a non-standard value range (0.32–73.9) from
+  Puleo's custom normalization (309 FFPE samples x 17601 genes). Probes were
+  already collapsed to HGNC gene symbols by pdacR (var.index) — no further
+  collapse needed. Treat as pre-normalized log-scale; do not back-transform or
+  re-normalize. Path B (limma/ttest).
+
 publication:
   doi: "10.1136/gutjnl-2017-314588"
   authors: "Puleo F et al."

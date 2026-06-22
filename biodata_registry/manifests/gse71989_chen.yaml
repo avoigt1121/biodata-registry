@@ -35,6 +35,13 @@ description: >
   1 chronic pancreatitis. Small cohort; treat results as exploratory.
   Primary grouping column is tissue_subtype (NOT tissue, which is uninformative).
 
+preprocessing: >
+  Pre-assembled from the GEO series matrix: Affymetrix U133 Plus 2.0 (GPL570)
+  RMA-normalized log2 expression (22 samples x 54675 probes). var.index holds
+  GPL570 probe IDs; HGNC symbols are precomputed into var['Gene Symbol'] via
+  GPL570 annotation (83.7% coverage). Small cohort — treat results as
+  exploratory. Path B (limma/ttest).
+
 publication:
   doi: ""
   authors: "Chen X et al."

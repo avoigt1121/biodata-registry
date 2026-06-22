@@ -204,6 +204,7 @@ def list_available_datasets() -> list[dict]:
             "accession": raw.get("accession", ""),
             "organism": raw.get("organism", ""),
             "modality": raw.get("modality", ""),
+            "preprocessing": raw.get("preprocessing", ""),
         })
     return results
 

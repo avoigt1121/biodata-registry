@@ -59,6 +59,14 @@ description: >
   available for 130/131 samples. Histologic grade and tumor site annotated.
   Data sourced via cptac Python package.
 
+preprocessing: >
+  Sourced via the cptac Python package (Broad harmonized pipeline): RSEM
+  transcript-level TPM (GENCODE v34, GRCh38) summed to gene level per HGNC symbol
+  (var.index; 131 primary tumors x 59742 genes). No probe collapse. TPM from this
+  pipeline is not directly comparable to TPM/FPKM from GEO or TCGA cohorts
+  without batch correction. Clinical/survival fields embedded from the CPTAC MSSM
+  clinical and follow-up tables. Path B (limma/ttest).
+
 publication:
   doi: "10.1016/j.cell.2021.08.023"
   authors: "Cao L, Huang C, Cui Zhou D, et al."

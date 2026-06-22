@@ -61,6 +61,15 @@ description: >
   tximport. TMM/TPM/counts variants share the same samples — see sibling
   manifests gse205154_sears (TPM) and gse205154_sears_counts (counts/DESeq2).
 
+preprocessing: >
+  Same cohort and pipeline as gse205154_sears (kallisto v0.44.0,
+  GRCh38.p5 / GENCODE v24, tximport gene-level): edgeR TMM-normalized gene-level
+  estimates that are NOT log-scaled (289 samples x 60554 genes) — log-transform
+  (e.g. log2(x+1)) before limma/ttest; do not re-run TMM/CPM or DESeq2. A
+  TMM_pass_filter flag (genes passing expression filtering) is carried into var.
+  var.index holds versioned Ensembl gene IDs; HGNC symbols are in var['SYMBOL'];
+  no probe collapse. Path B (limma/ttest after log).
+
 publication:
   pmid: "39789181"
   authors: "Sears RC, et al. (Brenden-Colson Center for Pancreatic Care, OHSU)"

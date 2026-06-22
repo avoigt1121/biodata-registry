@@ -48,6 +48,14 @@ description: >
   were corrected to their real HGNC symbols (DEC1, MARCH1..MARCH11) via the
   Entrez IDs in the pdacR source — see limitations.
 
+preprocessing: >
+  Pre-assembled from pdacR's Nones_GEO_array.rds (Illumina HumanHT-12 V4.0,
+  GPL10558): log2-normalized intensities (range 2.62–15.17; 103 primary PDAC).
+  Probes were mean-collapsed to 31324 HGNC gene symbols at assembly (var.index)
+  — no further collapse needed. Excel date-artifact gene symbols (e.g. '1-Dec',
+  '1-Mar') were corrected to their real HGNC symbols (DEC1, MARCH1..MARCH11)
+  using the source Entrez IDs. Path B (limma/ttest).
+
 publication:
   doi: "10.1038/ncomms5670"
   authors: "Nones K, Waddell N, Song S, et al."
