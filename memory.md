@@ -4,6 +4,17 @@ Last updated: 2026-06-24
 
 ---
 
+## 2026-06-24 — storage posture: private-by-default (ADR-0005)
+
+Recording the ADR-0005 decision (lives in `DecoupleRpy_Agent/docs/adr/ADR-0005-private-storage-persistence.md`) on the registry side, since the manifests point at the h5ad host it governs. Docs-only — no manifest/schema/loader change.
+
+- **`anne-voigt/pdac-research-data` stays PRIVATE by default** (confirmed private 2026-06-24). PRO's 1 TB private tier removes the free-tier pressure that drove public-by-default; "public" is now a deliberate, publication-time choice per dataset, not a storage workaround.
+- **Don't prune h5ads to save space.** Keep one canonical variant per cohort and retain siblings (e.g. the GSE205154 `gse205154_sears` TPM / `_counts` / `_tmm` trio) rather than dropping them — storage caps no longer force it.
+- **Data Studio (private Dataset Viewer) = first-pass check** in the `validate_manifest_against_data` workflow: eyeball a manifest's file in-browser before/after the programmatic validation, instead of download-and-open.
+- **Onboarding convention:** new datasets land private; "promote to public" is a publication-time checklist step.
+
+The lit-agent corpus half of ADR-0005 (retain snapshots, don't minimize) belongs in lit-agent's own CLAUDE.md (separate repo). SHOWCASE_STATUS.md carries the cross-repo h5ad-hosting line.
+
 ## 2026-06-24 session — 0.1.6 released (same-cohort gate: `cohort_id`/`variant` + `concordance`)
 
 Built + shipped the **0.1.6** wheel (the same-cohort source work from the
