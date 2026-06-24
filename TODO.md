@@ -15,6 +15,18 @@ pdac-analysis-orchestrator.
 
 ### Cross-dataset integration (ADR-0001)
 
+- **High — Deploy the 0.1.6 re-pin to the agent Spaces.** Registry 0.1.6 is
+  released (commit `261db0e`, see Done) and DecoupleRpy_Agent is re-pinned
+  0.1.5 → 0.1.6 (agent commit `fb2091e`, **LOCAL — not pushed**). Remaining:
+  push agent `main` → `hf-dev`, smoke-test that a sibling-variant request
+  (`gse205154_sears` + `gse205154_sears_tmm`) returns `mode="concordance"` and
+  routes to `decoupler_normalization_concordance`, then promote to `origin`
+  (prod). Until deployed, the live agent still meta-analyzes sibling variants.
+- **Cross-reference (DecoupleRpy_Agent) — concordance routine.** The registry
+  returns `mode="concordance"` for same-cohort variant requests; the agent's
+  `decoupler_normalization_concordance` routine (already built, inert under
+  0.1.5) acts on it instead of `decoupler_meta_analyze`. Activates once the
+  0.1.6 re-pin (`fb2091e`) is deployed — see the deploy item above.
 - **Cross-reference (not registry-side)** — the agent-side wrapper, the
   meta-analysis engine, and the pooling/batch-correction code are
   DecoupleRpy_Agent's job (ADR-0001 Phase 1/2). The registry only decides
@@ -65,16 +77,28 @@ pdac-analysis-orchestrator.
   download workaround works fine for data extraction.
 - **Low — No HF deployment for biodata-registry.** Not needed while
   DecoupleRpy_Agent imports the package directly.
-- **Low — HF `origin` mirror may lag `main`.** As of 2026-06-19 both GitHub
+- **Low — HF `origin` mirror may lag `main`.** As of 2026-06-24 both GitHub
   `github` (`avoigt1121/biodata-registry`) and the HF `origin`/`hf` mirror
   (`anne-voigt/biodata-registry`, the wheel host) have `main` synced at
-  `cbc083a` (the 0.1.2 release). Re-push `main` to `hf` after any future wheel so
-  the resolve URL's commit exists on the mirror.
+  `261db0e` (the 0.1.6 release). Re-push `main` to `hf` after any future wheel so
+  the resolve URL's commit exists on the mirror. NB: `git push hf` updates only
+  the `hf/main` tracking ref, so `git status` may report "ahead of origin/main"
+  even when the mirror is current — compare against `hf/main`, not `origin/main`.
 
 ---
 
 ## Done (recent)
 
+- 2026-06-24 — **0.1.6 released — same-cohort gate (`cohort_id`/`variant` +
+  `concordance`/`DUPLICATE_COHORT`).** `get_integration_plan` routes sibling
+  quantifications of one cohort (the GSE205154 TPM/counts/TMM trio) to
+  `mode="concordance"` (compare, don't combine) instead of `late`/meta-analysis,
+  and refuses `DUPLICATE_COHORT` when siblings are mixed with independent
+  datasets. Two optional manifest fields `cohort_id`/`variant`; Gate 1b runs
+  before the data_level gate. Release commit `261db0e` (wheel sha256
+  `c4a21878…`, 19 manifests), pushed github + hf; resolve URL verified 200 + sha
+  + size match. 56 pass / 2 skip. DecoupleRpy_Agent re-pinned 0.1.5 → 0.1.6
+  (`fb2091e`, local — deploy pending; see Open).
 - 2026-06-22 — **0.1.5 released — per-dataset `preprocessing` field (Item 3).**
   New optional `preprocessing: str` on the schema (wired through `from_dict`/
   `to_dict`), populated in all 19 manifests, surfaced in

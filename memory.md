@@ -1,6 +1,104 @@
 # memory.md — biodata-registry Working State
 
-Last updated: 2026-06-22
+Last updated: 2026-06-24
+
+---
+
+## 2026-06-24 session — 0.1.6 released (same-cohort gate: `cohort_id`/`variant` + `concordance`)
+
+Built + shipped the **0.1.6** wheel (the same-cohort source work from the
+2026-06-22 session below) and re-pinned the consumer. Same git-push publish path
+as 0.1.1–0.1.5 (the read-only HF API token 403s on `huggingface-cli upload`, so
+the wheel is git-tracked at the repo root + `git push hf`).
+
+- **Release commit `261db0e`** (the staged 0.1.6 source — integration/schema/
+  registry/server + 3 GSE205154 manifests + tests + CLAUDE.md + the wheel;
+  pyproject was already at 0.1.6). Pushed to **both** `github`
+  (`920b371..261db0e`) and `hf` (`920b371..261db0e`). The one-line
+  `integration.py` docstring fix (ADR reference path →
+  `docs/adr/ADR-0001-decision-matrix.md`) rode along. memory/TODO docs follow in
+  a separate commit (the b46392c → 920b371 pattern).
+- **Wheel** `biodata_registry-0.1.6-py3-none-any.whl`, **sha256
+  `c4a218783dc59cbb203fe064a7b32fafe43b091d2979676e9724370305218275`**, **89844
+  bytes**, **19 manifests**. Built with `uv build --wheel`. The untracked DRAFT
+  `cptac_pda_counts.yaml` (h5ad not hosted) was moved out of `manifests/` for the
+  build so setuptools' `package-data` glob couldn't bundle it — verified the wheel
+  has exactly 19 manifests and no `cptac_pda_counts`, then restored it.
+- **Isolated verification:** `uv pip install` of the wheel into a clean venv →
+  version 0.1.6, 19 datasets, the 3 GSE205154 carry `cohort_id=gse205154`;
+  `get_integration_plan` returns `concordance` for a sibling pair (empty
+  `refusal_rules_triggered`) and the full trio, `refuse` + `DUPLICATE_COHORT` for
+  siblings-plus-independent, and a non-concordance mode for two independent
+  datasets. Offline suite 56 pass / 2 skip.
+- **Resolve URL verified HTTP 200** + byte size (89844) + sha256 match:
+  `https://huggingface.co/anne-voigt/biodata-registry/resolve/261db0e994eb2b5a7f3e8a40ca8d269cc89bda9b/biodata_registry-0.1.6-py3-none-any.whl`
+  `--hash=sha256:c4a218783dc59cbb203fe064a7b32fafe43b091d2979676e9724370305218275`
+- **Consumer pin (DecoupleRpy_Agent):** re-pinned `requirements.in` +
+  `requirements.txt` 0.1.5 → 0.1.6 (URL above). requirements.txt is plain
+  `uv pip compile` output (no `--generate-hashes`), so only the commit-pinned URL
+  changed — there is no `--hash` line in the file; the sha256 is recorded here /
+  in the commit body. Agent commit `fb2091e` (**LOCAL — not pushed**); dry-run
+  resolve confirmed the 0.1.5 → 0.1.6 upgrade with no errors.
+- **STILL PENDING (deploy — awaiting explicit user approval to push):** push the
+  agent `main` → `hf-dev` (dev Space), smoke-test that `gse205154_sears` +
+  `gse205154_sears_tmm` returns `mode="concordance"` and routes to
+  `decoupler_normalization_concordance` (not `decoupler_meta_analyze`), then
+  promote to `origin` (prod). Until then the live agent still meta-analyzes
+  sibling variants.
+- **Draft follow-on:** `cptac_pda_counts.yaml` stays untracked WIP (a planned
+  same-cohort sibling of `cptac_pda` — Moffitt-subtyped GDC STAR-Counts build). It
+  has NO `cohort_id`/`variant` yet and its h5ad isn't hosted, so it was excluded
+  from 0.1.6. Before it ships: assemble + upload the h5ad AND add
+  `cohort_id: cptac_pda` / `variant: counts` to it (and `cohort_id: cptac_pda` /
+  `variant: tpm` to `cptac_pda` itself) so the pair routes to `concordance`.
+
+---
+
+## 2026-06-22 session — same-cohort variants: `cohort_id`/`variant` + `concordance` gate (source; RELEASED 2026-06-24 as 0.1.6 — see section above)
+
+Made the GSE205154 sibling relationship machine-readable so `get_integration_plan`
+stops mis-routing same-cohort variants into a meta-analysis. Source + tests +
+version bump done; **wheel NOT built/published and DecoupleRpy_Agent NOT re-pinned**
+(deploy step deferred for explicit approval).
+
+- **Schema (`manifest_schema.py`):** two new optional fields on `DatasetManifest` —
+  `cohort_id: str = ""` and `variant: str = ""`. Wired through `from_dict`
+  (`d.get(...) or ""`), `to_dict`, and the field-reference docstring. Back-compatible
+  (a manifest with neither still validates; no new validate() errors/warnings).
+- **`registry.list_available_datasets()`:** each entry now carries `cohort_id` +
+  `variant` so the agent sees the sibling relationship without loading each manifest.
+- **Integration engine (`integration.py`):** new **Gate 1b** (runs after arity,
+  *before* the data_level gate). When ≥2 requested datasets share a `cohort_id`:
+  all-one-cohort → `mode="concordance"` (compare variants descriptively, empty
+  `refusal_rules_triggered`); siblings mixed with independent datasets (or >1
+  duplicated cohort) → `refuse` with new code `DUPLICATE_COHORT`. New module
+  constants `CONCORDANCE` + `DUPLICATE_COHORT`; `_per_dataset_entry` now includes
+  `cohort_id`/`variant`. Module + tool docstrings updated; server.py tool docstring
+  updated. Top-level plan key set is UNCHANGED (concordance reuses the 9 keys).
+- **Manifests:** the GSE205154 trio annotated `cohort_id: gse205154` + `variant:
+  tpm`/`counts`/`tmm`. No other manifest has a cohort_id, so all prior integration
+  results are unchanged.
+- **Why before Gate 5:** siblings differ only in quantification; a TPM+TMM request
+  (`tpm` ≠ `normalized`) would otherwise fall through to `late` and be
+  meta-analyzed — exactly the double-count (Stouffer ~√N inflation; Q/I²=0 by
+  construction) we are preventing. This is the registry-side fix for the agent run
+  that meta-analyzed TPM vs TMM.
+- **Tests:** `tests/test_integration_plan.py` +8 (sibling pair → concordance incl.
+  pre-empting `late`; full-contract on a concordance plan; real trio → concordance;
+  real TPM+TMM → concordance; siblings + independent → DUPLICATE_COHORT; two
+  duplicated cohorts → DUPLICATE_COHORT; distinct single cohort_ids → not
+  concordance/early; no-cohort regression → late). `tests/test_registry.py` +3
+  (cohort_id/variant round-trip; trio shares cohort_id w/ distinct variants;
+  list_available_datasets exposes cohort_id). **Full offline suite: 56 passed, 2
+  skipped** (fastmcp + live-data skips, unchanged). End-to-end smoke confirmed all
+  four modes on real ids.
+- **pyproject:** `0.1.5` → `0.1.6`.
+- **RELEASED 2026-06-24 as 0.1.6** (wheel built + pushed github/hf, resolve URL
+  verified, consumer re-pinned locally — see the 0.1.6 section above). Only the
+  agent Space *deploy* remains, pending explicit user approval.
+- **Unrelated note:** `biodata_registry/manifests/cptac_pda_counts.yaml` is present
+  but **untracked in git** and not in any wheel — pre-existing WIP, not part of this
+  change. (It does validate; the suite includes it.)
 
 ---
 
