@@ -15,18 +15,14 @@ pdac-analysis-orchestrator.
 
 ### Cross-dataset integration (ADR-0001)
 
-- **High — Deploy the 0.1.6 re-pin to the agent Spaces.** Registry 0.1.6 is
-  released (commit `261db0e`, see Done) and DecoupleRpy_Agent is re-pinned
-  0.1.5 → 0.1.6 (agent commit `fb2091e`, **LOCAL — not pushed**). Remaining:
-  push agent `main` → `hf-dev`, smoke-test that a sibling-variant request
-  (`gse205154_sears` + `gse205154_sears_tmm`) returns `mode="concordance"` and
-  routes to `decoupler_normalization_concordance`, then promote to `origin`
-  (prod). Until deployed, the live agent still meta-analyzes sibling variants.
-- **Cross-reference (DecoupleRpy_Agent) — concordance routine.** The registry
-  returns `mode="concordance"` for same-cohort variant requests; the agent's
-  `decoupler_normalization_concordance` routine (already built, inert under
-  0.1.5) acts on it instead of `decoupler_meta_analyze`. Activates once the
-  0.1.6 re-pin (`fb2091e`) is deployed — see the deploy item above.
+- **Cross-reference (DecoupleRpy_Agent) — concordance routine NOW LIVE.**
+  Registry 0.1.6 returns `mode="concordance"` for same-cohort variant requests;
+  the agent's `decoupler_normalization_concordance` routine (built, was inert
+  under 0.1.5) now acts on it instead of `decoupler_meta_analyze`. Deployed
+  2026-06-24 (agent `fb2091e`) to dev (RUNNING) + prod (rebuilding) — see Done.
+  Optional: drive a real `gse205154_sears` + `_tmm` query on a live Space for an
+  end-to-end confirmation (couldn't be done from the release session — token
+  lacked API access to the private dev Space).
 - **Cross-reference (not registry-side)** — the agent-side wrapper, the
   meta-analysis engine, and the pooling/batch-correction code are
   DecoupleRpy_Agent's job (ADR-0001 Phase 1/2). The registry only decides
@@ -89,6 +85,13 @@ pdac-analysis-orchestrator.
 
 ## Done (recent)
 
+- 2026-06-24 — **0.1.6 re-pin deployed to the agent.** DecoupleRpy_Agent
+  re-pinned 0.1.5 → 0.1.6 (`fb2091e`), pushed to dev (`hf-dev`, RUNNING on 0.1.6
+  after a transient cold-start 500 cleared) and prod (`origin`,
+  `c9b0d3a..fb2091e`, rebuilding). Sibling-variant routing is now `concordance`
+  (was `late`/meta-analyze). The live private-Space query wasn't drivable from
+  the session (token lacked API access); verified via deterministic A/B + agent
+  wrapper pass-through + user-confirmed dev RUNNING.
 - 2026-06-24 — **0.1.6 released — same-cohort gate (`cohort_id`/`variant` +
   `concordance`/`DUPLICATE_COHORT`).** `get_integration_plan` routes sibling
   quantifications of one cohort (the GSE205154 TPM/counts/TMM trio) to

@@ -39,12 +39,16 @@ the wheel is git-tracked at the repo root + `git push hf`).
   changed — there is no `--hash` line in the file; the sha256 is recorded here /
   in the commit body. Agent commit `fb2091e` (**LOCAL — not pushed**); dry-run
   resolve confirmed the 0.1.5 → 0.1.6 upgrade with no errors.
-- **STILL PENDING (deploy — awaiting explicit user approval to push):** push the
-  agent `main` → `hf-dev` (dev Space), smoke-test that `gse205154_sears` +
-  `gse205154_sears_tmm` returns `mode="concordance"` and routes to
-  `decoupler_normalization_concordance` (not `decoupler_meta_analyze`), then
-  promote to `origin` (prod). Until then the live agent still meta-analyzes
-  sibling variants.
+- **DEPLOYED 2026-06-24:** agent re-pin `fb2091e` is on **dev** (`hf-dev`,
+  RUNNING on 0.1.6 — confirmed by the user after a transient cold-start 500
+  cleared) and **prod** (`origin`, `c9b0d3a..fb2091e`, rebuilding on 0.1.6).
+  Deterministic A/B before the push: 0.1.5 routed the GSE205154 sibling pair to
+  `late` (meta-analyzed = double-count bug); 0.1.6 routes it to `concordance`.
+  The live end-to-end query on the private dev Space could NOT be driven from
+  this session — the cached HF API token lacks access to that Space (git push
+  works, the API 404s) — so routing was verified deterministically (0.1.5→late
+  vs 0.1.6→concordance), via the agent's `dataset_get_integration_plan`
+  pass-through, and by the user confirming dev RUNNING.
 - **Draft follow-on:** `cptac_pda_counts.yaml` stays untracked WIP (a planned
   same-cohort sibling of `cptac_pda` — Moffitt-subtyped GDC STAR-Counts build). It
   has NO `cohort_id`/`variant` yet and its h5ad isn't hosted, so it was excluded
