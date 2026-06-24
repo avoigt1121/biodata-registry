@@ -6,26 +6,43 @@ Cross-dataset compatibility engine (ADR-0001 Phase 1, step 2).
   * **early** — pool the expression matrices and fit one model with
     ``dataset_id`` as a batch covariate, or
   * **late** — analyze each dataset separately and meta-analyze the results, or
-  * **refuse** — the datasets are incompatible for either route.
+  * **concordance** — the requested datasets are *sibling variants of one
+    cohort* (same samples, different quantification/units; they share a
+    ``cohort_id``). They must NOT be integrated or meta-analyzed — that
+    double-counts the cohort. Run each variant separately and compare with
+    descriptive agreement metrics (a normalization sensitivity check), or
+  * **refuse** — the datasets are incompatible for any route (including
+    ``DUPLICATE_COHORT``: sibling variants requested alongside independent
+    datasets — pick one variant per cohort first).
 
 The decision is a **pure function of manifest metadata** — no data is loaded.
 This deliberately keeps the registry metadata-pure: the *sample-level* confound
 check (are both contrast arms actually populated in each cohort after
 subsetting?) and the actual pooling / correction / meta-analysis happen later in
-the specialist. See ADR-0001-decision-matrix.md ("Registry vs specialist").
+the specialist. See docs/adr/ADR-0001-decision-matrix.md ("Registry vs specialist").
 
 Resolution order (first failing gate decides; short-circuit on ``refuse``)
 --------------------------------------------------------------------------
-1. arity        < 2 datasets                 -> refuse  (NOT_MULTI)
-2. organism     mixed & no ortholog bridge   -> refuse  (CROSS_ORGANISM_NO_BRIDGE)
-                mixed & bridgeable           -> requires_ortholog_mapping=True, continue
-3. feature      no shared gene_symbol space  -> refuse  (NO_SHARED_FEATURE_SPACE)
-4. modality     transcriptome + proteome     -> refuse  (CROSS_MODALITY)   [v1]
-5. data_level   poolable & EQUAL on all       -> early-eligible; else -> late   (D3)
-6. confound     a requested contrast is confounded with dataset:
-                a cohort supplies neither arm, or no cohort
-                supplies both arms           -> refuse  (CONFOUNDED_DESIGN)
-                else early-eligible -> early; else -> late
+1.  arity        < 2 datasets                 -> refuse  (NOT_MULTI)
+1b. cohort       >=2 requested datasets share a ``cohort_id`` (same samples,
+                 different quantification):
+                 all requested are one cohort -> concordance
+                 siblings + other datasets    -> refuse  (DUPLICATE_COHORT)
+2.  organism     mixed & no ortholog bridge   -> refuse  (CROSS_ORGANISM_NO_BRIDGE)
+                 mixed & bridgeable           -> requires_ortholog_mapping=True, continue
+3.  feature      no shared gene_symbol space  -> refuse  (NO_SHARED_FEATURE_SPACE)
+4.  modality     transcriptome + proteome     -> refuse  (CROSS_MODALITY)   [v1]
+5.  data_level   poolable & EQUAL on all       -> early-eligible; else -> late   (D3)
+6.  confound     a requested contrast is confounded with dataset:
+                 a cohort supplies neither arm, or no cohort
+                 supplies both arms           -> refuse  (CONFOUNDED_DESIGN)
+                 else early-eligible -> early; else -> late
+
+Gate 1b runs before the data_level gate on purpose. Sibling variants differ
+*only* in quantification, so without it a TPM+TMM request (``tpm`` !=
+``normalized``) would fall through Gate 5 to ``late`` and be meta-analyzed —
+exactly the double-counting we must prevent. ``concordance`` is not a refusal;
+it carries an empty ``refusal_rules_triggered``.
 
 ``early`` -> ``late`` downgrades are **not** refusals — they carry a clear
 ``reason`` and an empty ``refusal_rules_triggered``.
@@ -79,10 +96,14 @@ NEVER_EARLY_LEVELS = frozenset({"normalized", "protein_abundance"})
 
 # Stable refusal codes surfaced in refusal_rules_triggered.
 NOT_MULTI = "NOT_MULTI"
+DUPLICATE_COHORT = "DUPLICATE_COHORT"
 CROSS_ORGANISM_NO_BRIDGE = "CROSS_ORGANISM_NO_BRIDGE"
 NO_SHARED_FEATURE_SPACE = "NO_SHARED_FEATURE_SPACE"
 CROSS_MODALITY = "CROSS_MODALITY"
 CONFOUNDED_DESIGN = "CONFOUNDED_DESIGN"
+
+#: Non-refusal mode for sibling variants of a single cohort — compare, don't combine.
+CONCORDANCE = "concordance"
 
 
 # ---------------------------------------------------------------------------
@@ -99,6 +120,8 @@ def _per_dataset_entry(m: "DatasetManifest") -> dict:
         "analysis_path": m.analysis_path,
         "feature_id_type": m.feature_id_type,
         "requires_collapse": bool(m.feature_mapping.get("requires_collapse", False)),
+        "cohort_id": getattr(m, "cohort_id", "") or "",
+        "variant": getattr(m, "variant", "") or "",
     }
 
 
@@ -297,6 +320,17 @@ def _late_reason(levels: set[str]) -> str:
     )
 
 
+def _group_by_cohort(manifests: list["DatasetManifest"]) -> dict[str, list[str]]:
+    """Map ``cohort_id`` -> ``[dataset_id]`` for manifests that declare a
+    non-empty ``cohort_id`` (sibling quantifications of one cohort)."""
+    groups: dict[str, list[str]] = {}
+    for m in manifests:
+        cid = (getattr(m, "cohort_id", "") or "").strip()
+        if cid:
+            groups.setdefault(cid, []).append(m.dataset_id)
+    return groups
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -328,6 +362,56 @@ def plan_for_manifests(
             ),
             per_dataset=per_dataset,
             refusal_rules_triggered=[NOT_MULTI],
+        )
+
+    # Gate 1b — same-cohort variants (sibling quantifications of one cohort)
+    # Runs before the data_level gate: siblings differ only in quantification, so
+    # a TPM+TMM request would otherwise fall through to 'late' and be
+    # meta-analyzed — double-counting the identical samples.
+    duplicated = {
+        cid: ids for cid, ids in _group_by_cohort(manifests).items() if len(ids) >= 2
+    }
+    if duplicated:
+        total_in_dups = sum(len(ids) for ids in duplicated.values())
+        all_one_cohort = len(duplicated) == 1 and total_in_dups == len(manifests)
+        if all_one_cohort:
+            cid = next(iter(duplicated))
+            variants = ", ".join(
+                f"{m.dataset_id} ({m.variant or m.data_level})" for m in manifests
+            )
+            return _build(
+                mode=CONCORDANCE,
+                reason=(
+                    f"All {len(manifests)} requested datasets are sibling "
+                    f"quantifications of one cohort '{cid}' ({variants}). They are "
+                    f"the same samples in different units, so they must NOT be "
+                    f"pooled or meta-analyzed: combining identical samples "
+                    f"double-counts the cohort (Stouffer inflates the combined "
+                    f"score by ~sqrt(N); Cochran's Q / I^2 collapse to 0 by "
+                    f"construction, so zero heterogeneity is guaranteed, not "
+                    f"evidence of robustness). Run the analysis on each variant "
+                    f"separately and compare them with descriptive agreement "
+                    f"metrics (Pearson/Spearman on scores, sign-concordance, "
+                    f"overlap of significant calls) — a normalization concordance "
+                    f"/ sensitivity check, not an integration."
+                ),
+                per_dataset=per_dataset,
+                refusal_rules_triggered=[],
+            )
+        dup_desc = "; ".join(f"{cid}: {sorted(ids)}" for cid, ids in duplicated.items())
+        return _build(
+            mode="refuse",
+            reason=(
+                f"The request mixes >=2 quantifications of the same cohort "
+                f"({dup_desc}) with other datasets. Sibling variants are the same "
+                f"samples in different units and cannot be independent inputs to "
+                f"an integration or meta-analysis (that double-counts the cohort). "
+                f"Pick exactly one variant per cohort, then re-request. To compare "
+                f"a single cohort's quantifications, request only that cohort's "
+                f"variants (yields mode='concordance')."
+            ),
+            per_dataset=per_dataset,
+            refusal_rules_triggered=[DUPLICATE_COHORT],
         )
 
     # Gate 2 — organism (cross-species ortholog bridge)
@@ -481,10 +565,13 @@ def get_integration_plan(
 
     Returns
     -------
-    dict with keys: ``mode`` ("early"|"late"|"refuse"), ``reason`` (non-empty,
-    surfaced verbatim by the agent), ``shared_feature_space``,
+    dict with keys: ``mode`` ("early"|"late"|"concordance"|"refuse"), ``reason``
+    (non-empty, surfaced verbatim by the agent), ``shared_feature_space``,
     ``requires_ortholog_mapping``, ``requires_probe_collapse``, ``batch_key``,
-    ``poolable_data_level``, ``per_dataset``, ``refusal_rules_triggered``.
+    ``poolable_data_level``, ``per_dataset`` (each entry includes ``cohort_id``
+    and ``variant``), ``refusal_rules_triggered``. ``mode == "concordance"``
+    means the requested datasets are sibling variants of one cohort — compare
+    them, do not combine.
 
     Raises
     ------

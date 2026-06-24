@@ -32,6 +32,17 @@ limitations       list  Known caveats; must be non-empty (honest reporting).
 
 Optional
 ~~~~~~~~
+cohort_id         str   Shared identifier for datasets that are the SAME samples
+                        quantified/normalized different ways (sibling variants,
+                        e.g. the GSE205154 TPM/counts/TMM trio). Datasets that
+                        share a cohort_id must never be pooled or meta-analyzed
+                        (that double-counts the cohort); the only valid
+                        cross-variant operation is a normalization concordance
+                        check. Empty string = standalone cohort. Drives the
+                        same-cohort gate in integration.get_integration_plan.
+variant           str   Free-text label for which quantification this is within
+                        its cohort_id (e.g. "tpm", "counts", "tmm"). Used for
+                        report labelling; only meaningful alongside cohort_id.
 feature_mapping   dict  Probe→gene collapse params. Required when
                         feature_id_type='probe_id'.
                         {requires_collapse, gene_symbol_column,
@@ -237,6 +248,13 @@ class DatasetManifest:
     valid_workflows: list[str]
     limitations: list[str]
 
+    # Optional: same-cohort sibling grouping. Datasets sharing a cohort_id are the
+    # SAME samples in different quantifications/units (e.g. TPM vs TMM vs counts).
+    # They must never be pooled or meta-analyzed — see integration.py's same-cohort
+    # gate, which routes such requests to a concordance check instead.
+    cohort_id: str = ""
+    variant: str = ""   # quantification label within the cohort ("tpm"/"counts"/"tmm"/...)
+
     # Optional: sample ID column (None = use obs DataFrame index)
     sample_id_column: Optional[str] = None
 
@@ -324,6 +342,8 @@ class DatasetManifest:
             feature_id_type=str(d["feature_id_type"]),
             expression_source=dict(d["expression_source"]),
             metadata_source=dict(d["metadata_source"]),
+            cohort_id=str(d.get("cohort_id") or ""),
+            variant=str(d.get("variant") or ""),
             sample_id_column=str(d["sample_id_column"]) if d.get("sample_id_column") else None,
             group_columns=list(d["group_columns"]),
             valid_workflows=list(d["valid_workflows"]),
@@ -361,6 +381,8 @@ class DatasetManifest:
             "analysis_path": self.analysis_path,
             "expression_source": self.expression_source,
             "metadata_source": self.metadata_source,
+            "cohort_id": self.cohort_id,
+            "variant": self.variant,
             "sample_id_column": self.sample_id_column,
             "group_columns": self.group_columns,
             "valid_workflows": self.valid_workflows,

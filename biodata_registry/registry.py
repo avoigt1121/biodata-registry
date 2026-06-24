@@ -191,7 +191,10 @@ def list_available_datasets() -> list[dict]:
     """
     Return brief metadata for every registered dataset.
 
-    Each entry has: dataset_id, title, accession, organism, modality.
+    Each entry has: dataset_id, title, accession, organism, modality,
+    preprocessing, cohort_id, variant. ``cohort_id`` (when non-empty) flags
+    datasets that are the same samples in different quantifications — siblings
+    share a cohort_id and must not be pooled or meta-analyzed.
     Use load_manifest(dataset_id) to get the full typed manifest.
     """
     registry = get_registry()
@@ -205,6 +208,8 @@ def list_available_datasets() -> list[dict]:
             "organism": raw.get("organism", ""),
             "modality": raw.get("modality", ""),
             "preprocessing": raw.get("preprocessing", ""),
+            "cohort_id": raw.get("cohort_id", ""),
+            "variant": raw.get("variant", ""),
         })
     return results
 

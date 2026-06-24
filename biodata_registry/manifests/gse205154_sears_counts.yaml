@@ -29,6 +29,14 @@ title: "Sears Lab PDAC Bulk RNA-seq — Estimated Counts / DESeq2 (GSE205154; Su
 
 accession: GSE205154
 
+cohort_id: gse205154
+# Same-cohort sibling group — the SAME 289 samples in three quantifications:
+#   gse205154_sears (TPM) / gse205154_sears_counts (counts) / gse205154_sears_tmm (TMM).
+# get_integration_plan refuses to pool or meta-analyze datasets that share this
+# cohort_id (that double-counts the cohort); a variants-only request returns
+# mode='concordance' (run each variant, compare descriptively).
+variant: counts
+
 organism: human
 
 modality: bulk_rnaseq

@@ -39,6 +39,14 @@ accession: GSE205154
 # manifest loads is GSE205154's gene-level TPM supplementary file. Cite
 # GSE281129 as the parent SuperSeries (PMID 39789181).
 
+cohort_id: gse205154
+# Same-cohort sibling group — the SAME 289 samples in three quantifications:
+#   gse205154_sears (TPM) / gse205154_sears_counts (counts) / gse205154_sears_tmm (TMM).
+# get_integration_plan refuses to pool or meta-analyze datasets that share this
+# cohort_id (that double-counts the cohort); a variants-only request returns
+# mode='concordance' (run each variant, compare descriptively).
+variant: tpm
+
 organism: human
 
 modality: bulk_rnaseq

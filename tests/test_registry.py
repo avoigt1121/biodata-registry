@@ -169,3 +169,39 @@ def test_list_available_datasets_entry_shape():
         assert required_keys.issubset(entry.keys()), (
             f"Entry missing keys: {required_keys - entry.keys()}"
         )
+
+
+# ---------------------------------------------------------------------------
+# cohort_id / variant (same-cohort sibling variants)
+# ---------------------------------------------------------------------------
+
+def test_cohort_id_variant_round_trip():
+    """cohort_id/variant survive from_dict -> to_dict; absent -> empty strings."""
+    base = load_manifest("gse71729_moffitt").to_dict()
+    assert base["cohort_id"] == ""        # standalone cohort defaults to ""
+    assert base["variant"] == ""
+
+    base["cohort_id"] = "demo_cohort"
+    base["variant"] = "tpm"
+    rt = DatasetManifest.from_dict(base).to_dict()
+    assert rt["cohort_id"] == "demo_cohort"
+    assert rt["variant"] == "tpm"
+
+
+def test_gse205154_trio_share_cohort_id():
+    """The three GSE205154 manifests declare the same cohort_id and distinct
+    variants — the registry-level record of 'same samples, different units'."""
+    ids = ["gse205154_sears", "gse205154_sears_counts", "gse205154_sears_tmm"]
+    manifests = [load_manifest(d) for d in ids]
+    assert {m.cohort_id for m in manifests} == {"gse205154"}
+    assert {m.variant for m in manifests} == {"tpm", "counts", "tmm"}
+
+
+def test_list_available_datasets_exposes_cohort_id():
+    """list_available_datasets() surfaces cohort_id so the agent can see the
+    sibling relationship without loading each manifest."""
+    by_id = {d["dataset_id"]: d for d in list_available_datasets()}
+    assert by_id["gse205154_sears"]["cohort_id"] == "gse205154"
+    assert by_id["gse205154_sears"]["variant"] == "tpm"
+    # a standalone dataset reports an empty cohort_id
+    assert by_id["gse71729_moffitt"]["cohort_id"] == ""

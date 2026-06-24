@@ -13,9 +13,11 @@ import pytest
 
 from biodata_registry import get_integration_plan
 from biodata_registry.integration import (
+    CONCORDANCE,
     CONFOUNDED_DESIGN,
     CROSS_MODALITY,
     CROSS_ORGANISM_NO_BRIDGE,
+    DUPLICATE_COHORT,
     NO_SHARED_FEATURE_SPACE,
     NOT_MULTI,
     plan_for_manifests,
@@ -41,6 +43,8 @@ PER_DATASET_KEYS = {
     "analysis_path",
     "feature_id_type",
     "requires_collapse",
+    "cohort_id",
+    "variant",
 }
 
 
@@ -59,6 +63,8 @@ def _mk(
     group_columns=None,
     metadata_columns=None,
     default_contrasts=None,
+    cohort_id="",
+    variant="",
 ):
     """Build a minimal valid DatasetManifest with overridable decision fields."""
     feature_mapping = {} if requires_collapse is None else {"requires_collapse": requires_collapse}
@@ -79,6 +85,8 @@ def _mk(
         feature_mapping=feature_mapping,
         metadata_columns=metadata_columns or {},
         default_contrasts=default_contrasts or [],
+        cohort_id=cohort_id,
+        variant=variant,
     )
 
 
@@ -233,6 +241,101 @@ def test_empty_list_refused_not_multi():
 
 
 # ---------------------------------------------------------------------------
+# Gate 1b — same-cohort variants (sibling quantifications of one cohort)
+# ---------------------------------------------------------------------------
+
+def test_sibling_pair_is_concordance():
+    """Two datasets sharing a cohort_id -> concordance, NOT late/early.
+
+    Uses different data_levels (tpm vs normalized) to prove the cohort gate
+    pre-empts the data_level gate that would otherwise route this to 'late'.
+    """
+    a = _mk("c1_tpm", data_level="tpm", cohort_id="c1", variant="tpm")
+    b = _mk("c1_tmm", data_level="normalized", cohort_id="c1", variant="tmm")
+    plan = plan_for_manifests([a, b])
+    assert plan["mode"] == CONCORDANCE
+    assert plan["mode"] not in ("late", "early")
+    assert plan["refusal_rules_triggered"] == []
+    assert "concordance" in plan["reason"].lower()
+    # per_dataset carries the cohort grouping the agent acts on
+    assert all(e["cohort_id"] == "c1" for e in plan["per_dataset"])
+    assert {e["variant"] for e in plan["per_dataset"]} == {"tpm", "tmm"}
+
+
+def test_sibling_concordance_has_full_contract():
+    """A concordance plan still carries the full top-level key set."""
+    a = _mk("c2_a", cohort_id="c2", variant="tpm")
+    b = _mk("c2_b", cohort_id="c2", variant="tmm")
+    plan = plan_for_manifests([a, b])
+    assert set(plan.keys()) == PLAN_KEYS
+    assert plan["mode"] == CONCORDANCE
+
+
+def test_full_sibling_trio_is_concordance_real():
+    """The real GSE205154 trio (TPM/counts/TMM) -> concordance.
+
+    These are the same 289 samples; counts is Path A and the others Path B, so
+    pre-cohort-gate this mixed-level set would have meta-analyzed ('late')."""
+    plan = get_integration_plan(
+        ["gse205154_sears", "gse205154_sears_counts", "gse205154_sears_tmm"]
+    )
+    assert plan["mode"] == CONCORDANCE
+    assert plan["refusal_rules_triggered"] == []
+    assert all(e["cohort_id"] == "gse205154" for e in plan["per_dataset"])
+
+
+def test_two_real_siblings_is_concordance():
+    """The exact case from the agent run: TPM + TMM of one cohort -> concordance
+    (not meta-analysis)."""
+    plan = get_integration_plan(["gse205154_sears", "gse205154_sears_tmm"])
+    assert plan["mode"] == CONCORDANCE
+
+
+def test_siblings_mixed_with_independent_dataset_refused():
+    """Sibling variants requested alongside an independent dataset -> refuse
+    DUPLICATE_COHORT: they can't be independent inputs to a meta-analysis."""
+    plan = get_integration_plan(
+        ["gse205154_sears", "gse205154_sears_tmm", "tcga_paad"]
+    )
+    assert plan["mode"] == "refuse"
+    assert DUPLICATE_COHORT in plan["refusal_rules_triggered"]
+
+
+def test_two_distinct_duplicated_cohorts_refused():
+    """Two siblings of cohort A + two of cohort B (no clean integration) ->
+    refuse DUPLICATE_COHORT."""
+    a1 = _mk("a_tpm", cohort_id="A", data_level="tpm", variant="tpm")
+    a2 = _mk("a_tmm", cohort_id="A", data_level="normalized", variant="tmm")
+    b1 = _mk("b_tpm", cohort_id="B", data_level="tpm", variant="tpm")
+    b2 = _mk("b_tmm", cohort_id="B", data_level="normalized", variant="tmm")
+    plan = plan_for_manifests([a1, a2, b1, b2])
+    assert plan["mode"] == "refuse"
+    assert DUPLICATE_COHORT in plan["refusal_rules_triggered"]
+
+
+def test_distinct_single_cohort_ids_not_concordance():
+    """Datasets with DIFFERENT cohort_ids (each appearing once) are independent —
+    the gate only fires on a SHARED cohort_id. Equal raw_counts -> early."""
+    p = _mk("p_only", cohort_id="P", data_level="raw_counts",
+            modality="bulk_rnaseq", feature_id_type="gene_symbol")
+    q = _mk("q_only", cohort_id="Q", data_level="raw_counts",
+            modality="bulk_rnaseq", feature_id_type="gene_symbol")
+    plan = plan_for_manifests([p, q])
+    assert plan["mode"] != CONCORDANCE
+    assert plan["mode"] == "early"
+
+
+def test_no_cohort_id_is_unaffected():
+    """Datasets without a cohort_id behave exactly as before (regression):
+    mixed levels -> late, never concordance."""
+    a = _mk("plain_tpm", data_level="tpm")
+    b = _mk("plain_norm", data_level="normalized")
+    plan = plan_for_manifests([a, b])
+    assert plan["mode"] == "late"
+    assert plan["mode"] != CONCORDANCE
+
+
+# ---------------------------------------------------------------------------
 # Gate 6 — confound (metadata-level only, requires a requested contrast)
 # ---------------------------------------------------------------------------
 
@@ -382,6 +485,7 @@ def test_every_plan_has_nonempty_reason():
     plans = [
         get_integration_plan(["paca_au_rnaseq", "tcga_paad"]),          # early
         get_integration_plan(["gse71729_moffitt", "tcga_paad"]),        # late
+        get_integration_plan(["gse205154_sears", "gse205154_sears_tmm"]),  # concordance
         get_integration_plan(["tcga_paad"]),                            # NOT_MULTI
         plan_for_manifests([                                            # NO_SHARED...
             _mk("p1", feature_id_type="probe_id", requires_collapse=False),

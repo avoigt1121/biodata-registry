@@ -191,10 +191,15 @@ def get_integration_plan(
         cohort can express both arms. When omitted, design separability is
         deferred to the specialist's runtime check.
 
+    Sibling variants of one cohort (datasets sharing a ``cohort_id`` — the same
+    samples in different quantifications) are detected first: requesting only a
+    cohort's variants yields mode "concordance" (compare, don't combine);
+    mixing them with other datasets refuses with DUPLICATE_COHORT.
+
     Returns
     -------
     Dict with:
-      - mode: "early" | "late" | "refuse"
+      - mode: "early" | "late" | "concordance" | "refuse"
       - reason: str — human-readable, surfaced verbatim by the agent
       - shared_feature_space: str | None (e.g. "gene_symbol")
       - requires_ortholog_mapping: bool
@@ -202,10 +207,10 @@ def get_integration_plan(
       - batch_key: str ("dataset_id")
       - poolable_data_level: str | None (the shared level when mode == "early")
       - per_dataset: list of {dataset_id, organism, modality, data_level,
-        analysis_path, feature_id_type, requires_collapse}
+        analysis_path, feature_id_type, requires_collapse, cohort_id, variant}
       - refusal_rules_triggered: list[str] — stable codes (NOT_MULTI,
-        CROSS_ORGANISM_NO_BRIDGE, NO_SHARED_FEATURE_SPACE, CROSS_MODALITY,
-        CONFOUNDED_DESIGN)
+        DUPLICATE_COHORT, CROSS_ORGANISM_NO_BRIDGE, NO_SHARED_FEATURE_SPACE,
+        CROSS_MODALITY, CONFOUNDED_DESIGN)
 
     Raises
     ------

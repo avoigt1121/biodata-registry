@@ -64,7 +64,7 @@ tests/
 | `get_manifest` | Full manifest dict for a dataset |
 | `get_prohibited_inferences` | Refusal rules — what agents must not claim |
 | `get_contrast_definition` | Contrast definitions for a specific design_factor column |
-| `get_integration_plan` | Decide if datasets combine early (pool) / late (meta-analyze) / refuse — pure metadata function (ADR-0001) |
+| `get_integration_plan` | Decide if datasets combine early (pool) / late (meta-analyze) / concordance (same-cohort sibling variants — compare, don't combine) / refuse — pure metadata function (ADR-0001) |
 
 Run the server: `python -m biodata_registry.server`
 
@@ -72,11 +72,22 @@ Run the server: `python -m biodata_registry.server`
 
 `get_integration_plan(dataset_ids, design_factor=None, test_group=None, control_group=None)`
 is a **pure function of manifest metadata** — it loads no expression data. It runs a
-6-gate decision (arity → organism/ortholog bridge → shared `gene_symbol` feature space →
-modality → `data_level` poolability [D3] → metadata-level confound) and returns
-`mode` (`early`/`late`/`refuse`), a human-readable `reason`, and the flags an agent needs
+decision sequence (arity → **same-cohort** → organism/ortholog bridge → shared `gene_symbol`
+feature space → modality → `data_level` poolability [D3] → metadata-level confound) and returns
+`mode` (`early`/`late`/`concordance`/`refuse`), a human-readable `reason`, and the flags an agent needs
 (`shared_feature_space`, `requires_probe_collapse`, `requires_ortholog_mapping`,
-`batch_key`, `poolable_data_level`, `per_dataset`, `refusal_rules_triggered`).
+`batch_key`, `poolable_data_level`, `per_dataset` [now incl. `cohort_id`/`variant`],
+`refusal_rules_triggered`).
+
+Same-cohort gate (0.1.6): two optional manifest fields, `cohort_id` and `variant`, mark
+datasets that are the **same samples in different quantifications** (e.g. the GSE205154
+TPM/counts/TMM trio). The gate runs **before** the `data_level` gate: if ≥2 requested
+datasets share a `cohort_id`, the engine returns `concordance` (when the whole request is
+one cohort's variants — run each separately and compare descriptively; this is a
+normalization sensitivity check, not a combine) or refuses with `DUPLICATE_COHORT` (when
+siblings are mixed with independent datasets — pick one variant per cohort first). Without
+it, a TPM+TMM request would fall through to `late` and be meta-analyzed, double-counting the
+identical samples. `concordance` is **not** a refusal (empty `refusal_rules_triggered`).
 
 Key rule (D3): early pooling requires the **same** `data_level` on every dataset, and that
 level must be poolable (`raw_counts`/`log_expression`/`log_ratio`/`tpm`/`fpkm`).
