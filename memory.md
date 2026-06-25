@@ -4,6 +4,24 @@ Last updated: 2026-06-24
 
 ---
 
+## 2026-06-24 (later) — ADR-0001 decision-matrix doc added + concordance VALIDATED live on dev
+
+- **Authoritative `docs/adr/ADR-0001-decision-matrix.md` added** (`5381756`) — the engine's
+  spec now lives beside `integration.py`. It had only existed as a stale Phase-0 copy in
+  `DecoupleRpy_Agent/docs/adr/`, which was reduced to a pointer (agent `0ac9103`). Matched
+  to 0.1.6: same-cohort/concordance gate, `DUPLICATE_COHORT`, hardened Gate 6, worked
+  examples, refusal taxonomy.
+- **0.1.6 concordance gate VALIDATED end-to-end on the live dev agent.** A
+  `gse205154_sears` + `gse205154_sears_tmm` request → `get_integration_plan` returns
+  `mode="concordance"` (with `cohort_id`/`variant` in `per_dataset`); the agent routes to
+  `decoupler_normalization_concordance`, not meta-analysis.
+- **⚠ Operational lesson: re-pinning the wheel needs a FACTORY rebuild of the consuming
+  Space**, not a normal one — the dev Space served a *stale pre-0.1.6* `biodata_registry`
+  (pip/build cache) despite the correct pin; a factory rebuild installed 0.1.6. Applies to
+  the pending prod promotion.
+
+---
+
 ## 2026-06-24 — storage posture: private-by-default (ADR-0005)
 
 Recording the ADR-0005 decision (lives in `DecoupleRpy_Agent/docs/adr/ADR-0005-private-storage-persistence.md`) on the registry side, since the manifests point at the h5ad host it governs. Docs-only — no manifest/schema/loader change.
