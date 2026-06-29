@@ -1,6 +1,40 @@
 # memory.md — biodata-registry Working State
 
-Last updated: 2026-06-24
+Last updated: 2026-06-29
+
+---
+
+## 2026-06-29 — 0.1.7 released: single-cell readiness (Loveless TODO, Phases 2–3 registry-side)
+
+Registry-side groundwork for the **Loveless single-cell dataset** ingestion
+(TODO §"Dataset ingestion"). The manifest itself stays blocked on Phase 1 (the
+offline 33.4 GB `.rds`→h5ad conversion on a high-RAM HF Job); only the
+schema/engine gaps that need no data were closed here.
+
+- **`manifest_schema.py`** (`f658367`): `VALID_WORKFLOWS` gains `sc_annotation` +
+  `pseudobulk_de`. `analysis_path` now checks **modality before data_level** —
+  `sc_rnaseq`/`spatial_rnaseq` → `"P"` (pseudobulk/annotation) regardless of
+  `data_level`, so an sc raw-counts h5ad is never mislabeled Path A (the
+  DESeq2-on-cells pseudoreplication trap). New `_SINGLE_CELL_MODALITIES`. **Note:
+  `analysis_path` now has THREE values (A/B/P)** — consumers that branch on it
+  must handle "P".
+- **`integration.py`** (`f658367`): new **Gate 4b `CROSS_RESOLUTION`** between the
+  modality (4) and data_level (5) gates. `bulk` + `sc_rnaseq`/`spatial_rnaseq`
+  refuses instead of early-pooling cells×genes with samples×genes (both are
+  "transcriptome", so Gate 4 passes them and equal raw_counts would early-pool).
+  Mirrors the proteome gate; same-resolution sc+sc still proceeds. New
+  `SINGLE_CELL_MODALITIES` + `CROSS_RESOLUTION` constant.
+- Tests: 64 passed, 2 skipped (fastmcp not installed). Source pushed to `github`.
+- **Release/re-pin:** `hf upload` to `anne-voigt/biodata-registry` worked this
+  session (logged in as `anne-voigt`, write access) → wheel
+  `biodata_registry-0.1.7-py3-none-any.whl`, HF rev
+  `eef040633cebade84c513b7467b9dad0c9a8625f`,
+  sha256 `3056ec41edb234c5bbc6a9d0156f747001445c977df8260f48b56d3563822f93`.
+  (Contrast the older note below that the upload 403'd — today's session had a
+  write-scoped login.) DecoupleRpy_Agent `requirements.in` + `requirements.txt`
+  re-pinned to the 0.1.7 wheel; **agent NOT yet committed/deployed** (edits sit in
+  its working tree on branch `perf/mcp-http-resident-server`). Remember the
+  ⚠ FACTORY-rebuild lesson below when the agent Space is rebuilt.
 
 ---
 
