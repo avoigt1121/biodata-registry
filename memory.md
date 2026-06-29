@@ -31,10 +31,28 @@ schema/engine gaps that need no data were closed here.
   `eef040633cebade84c513b7467b9dad0c9a8625f`,
   sha256 `3056ec41edb234c5bbc6a9d0156f747001445c977df8260f48b56d3563822f93`.
   (Contrast the older note below that the upload 403'd — today's session had a
-  write-scoped login.) DecoupleRpy_Agent `requirements.in` + `requirements.txt`
-  re-pinned to the 0.1.7 wheel; **agent NOT yet committed/deployed** (edits sit in
-  its working tree on branch `perf/mcp-http-resident-server`). Remember the
-  ⚠ FACTORY-rebuild lesson below when the agent Space is rebuilt.
+  write-scoped login.)
+- **Agent re-pin DEPLOYED to DEV** (not prod). The 0.1.7 pin was committed to the
+  agent's `main` (commit `45ace9a`, requirements.in + .txt only) in an isolated
+  worktree — deliberately NOT on the `feat/loveless-sc-serving` branch, which has
+  unrelated agent-side single-cell-serving WIP (ADR-0006 + signatures.py +
+  rna_sc.py, concurrently committed by the user as `6e9f020`). Pushed to the dev
+  Space (`hf-dev/main` `c1cece4`→`45ace9a`). **Prod (`origin/main`) deliberately
+  NOT pushed** — gated on dev validation. ⚠ A wheel re-pin needs a **FACTORY
+  rebuild** of the Space (a normal rebuild serves the stale cached install — the
+  0.1.6 lesson below); the factory rebuild is a Space-Settings UI action (can't be
+  done from CLI) and dev RUNNING can't be verified from here (private Space). So:
+  user factory-rebuilds dev → confirms RUNNING → then promote `main` to prod
+  (`git push origin main`) + factory-rebuild prod. Note 0.1.7 is **inert** for the
+  agent until a single-cell manifest ships (none registered yet), so no functional
+  change for end users yet.
+- **Phase 1 conversion tooling READY** (`46b955a`): `scripts/ingest/loveless/`
+  (`convert_rds_to_h5ad.R` + `assemble_h5ad.py` + `run_job.sh` + `README.md`) — the
+  launch-ready `.rds`→h5ad pipeline (schema report → raw-counts extraction →
+  gzip h5ad → upload to private `pdac-research-data`). Two-pass: discover the real
+  cohort/sample columns (Pass 1) then emit the Steele subset (Pass 2). STILL TO
+  RUN on a ≥256 GB CPU HF Job (~$1.90/hr; not CLI-runnable). Once run, the manifest
+  unblocks → 0.1.8 + re-pin.
 
 ---
 
