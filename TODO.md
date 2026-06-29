@@ -86,13 +86,18 @@ pdac-analysis-orchestrator.
     derived signatures on the existing fast path.
 
   **Phase 1 — ingestion / conversion (offline, one-off):**
-  - `.rds`→h5ad on a **high-RAM HF Job** (CPU Performance: 32 vCPU / 256 GB /
-    ~$1.90/hr; CPU XL 124 GB only if counts-only). R image (Seurat +
-    SeuratDisk/sceasy) → extract counts assay + obs + var, **drop corrected/scaled
-    layers** (biggest lever on peak RAM + output size) → write h5ad via `anndata`.
-    Memory-bound, no GPU; NOT a laptop job.
-  - Produce two artifacts: (a) the Steele-subset analyzable h5ad, (b) the
-    reference signatures / atlas extract.
+  - ✅ **Tooling READY (2026-06-29)** — `scripts/ingest/loveless/` holds the
+    launch-ready pipeline: `convert_rds_to_h5ad.R` (schema report + raw-counts
+    extraction, drops corrected/scaled layers), `assemble_h5ad.py` (intermediates
+    → gzip h5ad + obs summary + optional cohort subset), `run_job.sh` (one-shot
+    in-container driver: Zenodo download → R → Python → upload to private
+    `pdac-research-data`), and `README.md` (the `hf jobs run` launch command +
+    two-pass workflow). All three syntax-checked. **STILL TO RUN** (needs a
+    ≥256 GB CPU HF Job + ~$1.90/hr — not runnable from the CLI; user launches).
+  - Two-pass: Pass 1 (no subset) emits `schema_report.txt` + `obs_summary.txt` so
+    we learn the real cohort column + patient/sample key; Pass 2 emits the
+    Steele-cohort analyzable subset. Produces two artifacts: (a) the Steele-subset
+    analyzable h5ad, (b) the full-atlas counts h5ad as offline reference.
 
   **Phase 2 — manifest + schema gaps:**
   - **BLOCKED on Phase 1** — Fill the manifest from the converted `obs`/`var`
