@@ -98,6 +98,60 @@ def test_load_manifest_has_group_columns():
     assert len(manifest.group_columns) >= 1
 
 
+# ---------------------------------------------------------------------------
+# analysis_path routing — single-cell/spatial -> 'P' (no DESeq2-on-cells)
+# ---------------------------------------------------------------------------
+
+def _mk_manifest(**overrides) -> DatasetManifest:
+    """Minimal valid DatasetManifest for schema-level unit tests."""
+    base = dict(
+        dataset_id="syn",
+        title="synthetic",
+        accession="SYN",
+        organism="human",
+        modality="bulk_rnaseq",
+        platform="synthetic",
+        data_level="raw_counts",
+        feature_id_type="gene_symbol",
+        expression_source={"type": "local"},
+        metadata_source={"type": "manual"},
+        group_columns=["condition"],
+        valid_workflows=["activity_scoring"],
+        limitations=["synthetic fixture"],
+    )
+    base.update(overrides)
+    return DatasetManifest(**base)
+
+
+def test_sc_rnaseq_analysis_path_is_p_despite_raw_counts():
+    """sc_rnaseq raw_counts -> 'P' (pseudobulk/annotation), NOT 'A' (DESeq2-on-cells)."""
+    m = _mk_manifest(modality="sc_rnaseq", data_level="raw_counts")
+    assert m.analysis_path == "P"
+
+
+def test_spatial_rnaseq_analysis_path_is_p():
+    """spatial_rnaseq routes to 'P' regardless of data_level."""
+    m = _mk_manifest(modality="spatial_rnaseq", data_level="normalized")
+    assert m.analysis_path == "P"
+
+
+def test_bulk_raw_counts_still_path_a():
+    """Regression: bulk raw_counts is unaffected by the resolution check -> 'A'."""
+    m = _mk_manifest(modality="bulk_rnaseq", data_level="raw_counts")
+    assert m.analysis_path == "A"
+
+
+def test_sc_workflows_pass_validation():
+    """sc_annotation and pseudobulk_de are recognised workflows (no warning)."""
+    m = _mk_manifest(
+        modality="sc_rnaseq", data_level="raw_counts",
+        valid_workflows=["sc_annotation", "pseudobulk_de", "activity_scoring"],
+    )
+    result = m.validate()
+    assert result.valid, f"errors: {result.errors}"
+    assert not any("Unknown workflow" in w for w in result.warnings)
+
+
 def test_load_manifest_has_limitations():
     """Moffitt manifest has at least one limitation."""
     manifest = load_manifest("gse71729_moffitt")

@@ -17,6 +17,7 @@ from biodata_registry.integration import (
     CONFOUNDED_DESIGN,
     CROSS_MODALITY,
     CROSS_ORGANISM_NO_BRIDGE,
+    CROSS_RESOLUTION,
     DUPLICATE_COHORT,
     NO_SHARED_FEATURE_SPACE,
     NOT_MULTI,
@@ -218,6 +219,57 @@ def test_cross_modality_refused():
     plan = plan_for_manifests([rna, prot])
     assert plan["mode"] == "refuse"
     assert CROSS_MODALITY in plan["refusal_rules_triggered"]
+
+
+# ---------------------------------------------------------------------------
+# Gate 4b — resolution (bulk vs single-cell/spatial)
+# ---------------------------------------------------------------------------
+
+def test_bulk_plus_single_cell_refused():
+    """bulk_rnaseq + sc_rnaseq at the SAME poolable level (raw_counts) -> refuse.
+
+    Equal raw_counts would early-pool without this gate; resolution must win."""
+    bulk = _mk("syn_bulk", modality="bulk_rnaseq", data_level="raw_counts",
+               feature_id_type="gene_symbol")
+    sc = _mk("syn_sc", modality="sc_rnaseq", data_level="raw_counts",
+             feature_id_type="gene_symbol")
+    plan = plan_for_manifests([bulk, sc])
+    assert plan["mode"] == "refuse"
+    assert CROSS_RESOLUTION in plan["refusal_rules_triggered"]
+
+
+def test_bulk_plus_spatial_refused():
+    """spatial_rnaseq counts as single-cell resolution -> refuse against bulk."""
+    bulk = _mk("syn_bulk2", modality="bulk_microarray", data_level="log_expression",
+               feature_id_type="gene_symbol")
+    spatial = _mk("syn_spatial", modality="spatial_rnaseq", data_level="raw_counts",
+                  feature_id_type="gene_symbol")
+    plan = plan_for_manifests([bulk, spatial])
+    assert plan["mode"] == "refuse"
+    assert CROSS_RESOLUTION in plan["refusal_rules_triggered"]
+
+
+def test_two_single_cell_same_resolution_not_cross_resolution():
+    """Two sc datasets share resolution -> the resolution gate does not fire
+    (they proceed to the data_level gate)."""
+    a = _mk("syn_sc_a", modality="sc_rnaseq", data_level="raw_counts",
+            feature_id_type="gene_symbol")
+    b = _mk("syn_sc_b", modality="sc_rnaseq", data_level="raw_counts",
+            feature_id_type="gene_symbol")
+    plan = plan_for_manifests([a, b])
+    assert CROSS_RESOLUTION not in plan["refusal_rules_triggered"]
+    assert plan["mode"] != "refuse"
+
+
+def test_single_cell_analysis_path_is_p():
+    """An sc raw_counts dataset reports analysis_path 'P', not 'A' (no
+    DESeq2-on-cells). Surfaced in per_dataset so the agent routes pseudobulk."""
+    a = _mk("syn_sc_path", modality="sc_rnaseq", data_level="raw_counts",
+            feature_id_type="gene_symbol")
+    b = _mk("syn_sc_path_b", modality="sc_rnaseq", data_level="raw_counts",
+            feature_id_type="gene_symbol")
+    plan = plan_for_manifests([a, b])
+    assert all(e["analysis_path"] == "P" for e in plan["per_dataset"])
 
 
 # ---------------------------------------------------------------------------

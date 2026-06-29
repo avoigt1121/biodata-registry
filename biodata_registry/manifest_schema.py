@@ -57,8 +57,16 @@ publication       dict  {doi, authors, year, journal, title}
 
 Derived (not stored)
 ~~~~~~~~~~~~~~~~~~~~
-analysis_path     "A" if data_level='raw_counts', else "B".
-                  "A" → DESeq2 pipeline.
+analysis_path     "P" if modality is single-cell/spatial (regardless of
+                  data_level); else "A" if data_level='raw_counts'; else "B".
+                  "P" → pseudobulk/annotation path: aggregate cells to
+                        sample-level pseudobulk first (DESeq2 runs on the
+                        pseudobulk matrix, never per cell), or do per-cell
+                        activity scoring / annotation. Resolution is checked
+                        before data_level so an sc raw_counts h5ad is never
+                        mislabeled Path A (the DESeq2-on-cells pseudoreplication
+                        trap).
+                  "A" → DESeq2 pipeline (bulk raw counts).
                   "B" → skip preprocess_data, use ttest or limma.
 """
 
@@ -94,6 +102,12 @@ VALID_DATA_LEVELS = frozenset({
 # data_levels that map to Path A (raw counts → DESeq2)
 _PATH_A_LEVELS = frozenset({"raw_counts"})
 
+# modalities whose unit of observation is a cell/spot, not a sample. These route
+# to Path "P" (pseudobulk/annotation) regardless of data_level — running DESeq2
+# directly on cells is the pseudoreplication trap, so even raw_counts here must
+# NOT be treated as Path A.
+_SINGLE_CELL_MODALITIES = frozenset({"sc_rnaseq", "spatial_rnaseq"})
+
 VALID_FEATURE_ID_TYPES = frozenset({
     "probe_id",          # microarray probe IDs (require collapse to gene symbols)
     "gene_symbol",       # HGNC gene symbols
@@ -119,9 +133,13 @@ VALID_METADATA_SOURCE_TYPES = frozenset({
 
 VALID_WORKFLOWS = frozenset({
     "microarray",
-    "activity_scoring",
+    "activity_scoring",     # per-cell or per-sample decoupleR activity scoring
     "activity_stats",
     "survival",
+    "sc_annotation",        # single-cell QC / clustering / cell-type annotation
+    "pseudobulk_de",        # aggregate cells to pseudobulk, then DESeq2 on the
+                            # sample-level matrix (the statistically valid sc DE
+                            # route — never DESeq2 per cell)
 })
 
 VALID_DE_METHODS = frozenset({"deseq2", "ttest", "limma"})
@@ -300,11 +318,16 @@ class DatasetManifest:
     @property
     def analysis_path(self) -> str:
         """
-        Derived from data_level.
+        Derived from modality (checked first) then data_level.
 
-        'A' — raw_counts; use DESeq2 pipeline.
-        'B' — all other levels; skip preprocess_data, use ttest or limma.
+        'P' — single-cell/spatial modality; pseudobulk-then-DESeq2 or per-cell
+              annotation/scoring. Wins over data_level so an sc raw_counts h5ad
+              is never routed to DESeq2-on-cells (pseudoreplication).
+        'A' — bulk raw_counts; use DESeq2 pipeline.
+        'B' — all other bulk levels; skip preprocess_data, use ttest or limma.
         """
+        if self.modality in _SINGLE_CELL_MODALITIES:
+            return "P"
         return "A" if self.data_level in _PATH_A_LEVELS else "B"
 
     # ------------------------------------------------------------------

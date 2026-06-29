@@ -58,6 +58,79 @@ pdac-analysis-orchestrator.
   feasible (157/234) but no label values to join. Needs EGA DAA. See COMPASS
   section in `memory.md` + `REGISTRY_TODO_PLANS.md` §4.4-D.
 
+### Dataset ingestion (from PI research to-do list, 2026-06-26)
+
+- **High — Loveless single-cell dataset: obtain + integrate.** New single-cell
+  PDAC cohort from the PI's research to-do list. Build a `modality: sc_rnaseq`
+  manifest, host the h5ad on `anne-voigt/pdac-research-data`, and register it.
+  Single-cell *analysis* wiring + serving/runtime design is DecoupleRpy_Agent's
+  job — cross-ref its TODO.
+
+  **Provenance & source (confirmed 2026-06-29):**
+  - Loveless et al. 2025, *Clin Cancer Res* 31(4):756–772 (PMID 39636224, DOI
+    10.1158/1078-0432.CCR-24-2183) — **Steele lab, NOT Sears/BCC-authored**
+    (tracked reference only).
+  - Data = Zenodo `10.5281/zenodo.14199536`: ONE 33.4 GB `scAtlas.rds.gz`
+    **Seurat** object — the integrated atlas (>700k cells, annotations embedded),
+    CC-BY-4.0, **no GEO accession**.
+
+  **Scope decision (drives everything below):**
+  - **Register the Steele-cohort raw-counts subset as the analyzable dataset** —
+    clean pseudobulk DE + decoupleR activity scoring, one consistent platform;
+    runtime then feels like the existing bulk cases.
+  - **Keep the full integrated atlas as an offline-processed reference / signature
+    / deconvolution source, NOT a live-computed dataset.** It's batch-corrected
+    across heterogeneous studies (confounded for DE) and ~100 GB+ in RAM (won't
+    fit the live Space). Heavy sc work (annotate / QC / derive signatures) runs
+    ONCE offline at ingestion; user-facing ops then score *bulk* data against the
+    derived signatures on the existing fast path.
+
+  **Phase 1 — ingestion / conversion (offline, one-off):**
+  - `.rds`→h5ad on a **high-RAM HF Job** (CPU Performance: 32 vCPU / 256 GB /
+    ~$1.90/hr; CPU XL 124 GB only if counts-only). R image (Seurat +
+    SeuratDisk/sceasy) → extract counts assay + obs + var, **drop corrected/scaled
+    layers** (biggest lever on peak RAM + output size) → write h5ad via `anndata`.
+    Memory-bound, no GPU; NOT a laptop job.
+  - Produce two artifacts: (a) the Steele-subset analyzable h5ad, (b) the
+    reference signatures / atlas extract.
+
+  **Phase 2 — manifest + schema gaps:**
+  - **BLOCKED on Phase 1** — Fill the manifest from the converted `obs`/`var`
+    (don't guess columns): `accession: 10.5281/zenodo.14199536`,
+    `feature_id_type: gene_symbol` (confirm), `sample_id_column` = the
+    patient/sample key (the pseudobulk aggregation key — critical),
+    `group_columns` from real obs, `preprocessing:` records the rds→h5ad
+    provenance, refusal rules (no cell-level p-values; never pool with bulk).
+    Validate with `dataset_validate_manifest_against_data`.
+  - ✅ **DONE (2026-06-29)** — `manifest_schema.py` gaps closed (registry-side,
+    no data needed):
+    - `VALID_WORKFLOWS` now has `sc_annotation` + `pseudobulk_de`
+      (`activity_scoring` already covered per-cell scoring).
+    - `analysis_path` now returns `"P"` for `sc_rnaseq`/`spatial_rnaseq`
+      (modality checked *before* `data_level`), so an sc raw-counts h5ad is no
+      longer mislabeled Path A (DESeq2-on-cells trap). `_SINGLE_CELL_MODALITIES`
+      drives it. Tests in `tests/test_registry.py`.
+
+  **Phase 3 — integration gate (`integration.py`):**
+  - ✅ **DONE (2026-06-29)** — Added Gate 4b: `CROSS_RESOLUTION` refusal between
+    the modality gate (4) and the data_level gate (5). A `bulk`+`sc_rnaseq`/
+    `spatial_rnaseq` request now refuses instead of early-pooling cells×genes
+    with samples×genes (it would otherwise slip through Gate 4 since both are
+    "transcriptome" and early-pool equal raw_counts). Mirrors the proteome
+    pattern; `SINGLE_CELL_MODALITIES` + `CROSS_RESOLUTION` constant. Same-
+    resolution sc+sc still proceeds. Tests in `tests/test_integration_plan.py`.
+    Can graduate to a dedicated mode later like `concordance` did.
+    NOTE: not yet committed/released — needs a version bump + re-pin in
+    DecoupleRpy_Agent's `requirements.txt` to reach the agent.
+- **Med — Candidate-dataset intake checklist.** For every new candidate *public*
+  dataset, run a pre-onboarding query to confirm what it actually contains before
+  building a manifest: (a) does it carry **survival** information? (b) is it
+  **RNA-seq** (or array) vs **DNA/variant-only**? Codify as a step in the
+  dataset-onboarding checklist so DNA-only / survival-less sets are caught early.
+- **Note (separate project) — MSK data is NOT a transcriptomics-registry item.**
+  The MSK dataset is DNA / variant data plus survival + comorbidity — out of scope
+  for this expression-registry. Track as its own project; do not onboard here.
+
 ### Cross-reference (not a registry-side fix)
 
 - **Low — Live GPL-annotation fallback** in DecoupleRpy_Agent

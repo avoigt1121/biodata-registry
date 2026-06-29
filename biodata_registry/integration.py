@@ -32,6 +32,7 @@ Resolution order (first failing gate decides; short-circuit on ``refuse``)
                  mixed & bridgeable           -> requires_ortholog_mapping=True, continue
 3.  feature      no shared gene_symbol space  -> refuse  (NO_SHARED_FEATURE_SPACE)
 4.  modality     transcriptome + proteome     -> refuse  (CROSS_MODALITY)   [v1]
+4b. resolution   bulk + single-cell/spatial   -> refuse  (CROSS_RESOLUTION)  [v1]
 5.  data_level   poolable & EQUAL on all       -> early-eligible; else -> late   (D3)
 6.  confound     a requested contrast is confounded with dataset:
                  a cohort supplies neither arm, or no cohort
@@ -46,6 +47,16 @@ it carries an empty ``refusal_rules_triggered``.
 
 ``early`` -> ``late`` downgrades are **not** refusals — they carry a clear
 ``reason`` and an empty ``refusal_rules_triggered``.
+
+Gate 4b (resolution) mirrors the proteome pattern: bulk (sample × gene) and
+single-cell/spatial (cell/spot × gene) data live at different units of
+observation. Pooling them as one matrix is meaningless, and a bulk+sc request
+otherwise slips through the modality gate (both are "transcriptome") into the
+data_level gate, which would early-pool equal raw_counts. The valid routes are
+deconvolution, signature transfer, or pseudobulk-then-meta-analyze — none of
+which this metadata-pure engine performs — so v1 refuses, exactly as Gate 4 does
+for transcriptome+proteome. This may graduate to a dedicated mode later (as
+``concordance`` did).
 
 Gate 5 (D3, signed off) is the key rule: early integration requires the *same*
 ``data_level`` on every dataset, and that level must be in the poolable set.
@@ -79,6 +90,11 @@ TARGET_FEATURE_SPACE = "gene_symbol"
 #: Modality treated as the proteome side of the transcriptome/proteome split.
 PROTEOMICS_MODALITY = "proteomics"
 
+#: Modalities whose unit of observation is a cell/spot rather than a sample.
+#: A request mixing these with bulk modalities is refused (CROSS_RESOLUTION):
+#: the matrices are not poolable across resolutions.
+SINGLE_CELL_MODALITIES = frozenset({"sc_rnaseq", "spatial_rnaseq"})
+
 #: data_levels that may be pooled *early* — but only when EQUAL across all
 #: datasets (Gate 5 / D3). raw_counts is the sole Path-A level; the rest are
 #: Path-B scales that are only comparable enough to batch-correct when identical.
@@ -100,6 +116,7 @@ DUPLICATE_COHORT = "DUPLICATE_COHORT"
 CROSS_ORGANISM_NO_BRIDGE = "CROSS_ORGANISM_NO_BRIDGE"
 NO_SHARED_FEATURE_SPACE = "NO_SHARED_FEATURE_SPACE"
 CROSS_MODALITY = "CROSS_MODALITY"
+CROSS_RESOLUTION = "CROSS_RESOLUTION"
 CONFOUNDED_DESIGN = "CONFOUNDED_DESIGN"
 
 #: Non-refusal mode for sibling variants of a single cohort — compare, don't combine.
@@ -471,6 +488,31 @@ def plan_for_manifests(
             requires_ortholog_mapping=requires_ortholog_mapping,
             requires_probe_collapse=requires_probe_collapse,
             refusal_rules_triggered=[CROSS_MODALITY],
+        )
+
+    # Gate 4b — resolution (v1: no bulk + single-cell/spatial pooling)
+    # Runs before the data_level gate: bulk and sc/spatial can share a poolable
+    # data_level (e.g. raw_counts), so without this an sc + bulk request would
+    # early-pool cells×genes with samples×genes. Mirrors the proteome gate.
+    has_single_cell = any(m.modality in SINGLE_CELL_MODALITIES for m in manifests)
+    has_bulk = any(m.modality not in SINGLE_CELL_MODALITIES for m in manifests)
+    if has_single_cell and has_bulk:
+        return _build(
+            mode="refuse",
+            reason=(
+                f"Cross-resolution integration (bulk + single-cell/spatial) is "
+                f"not supported in v1 (modalities: {sorted(modalities)}). Bulk data "
+                f"is sample × gene and single-cell/spatial is cell/spot × gene — "
+                f"they cannot be pooled into one matrix. Valid routes are "
+                f"deconvolution, signature transfer, or pseudobulk-then-"
+                f"meta-analyze, none performed by this metadata-only engine. "
+                f"Refusing."
+            ),
+            per_dataset=per_dataset,
+            shared_feature_space=shared_feature_space,
+            requires_ortholog_mapping=requires_ortholog_mapping,
+            requires_probe_collapse=requires_probe_collapse,
+            refusal_rules_triggered=[CROSS_RESOLUTION],
         )
 
     # Gate 5 — data_level poolability (D3, signed off)
