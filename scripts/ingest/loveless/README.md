@@ -8,8 +8,10 @@ which can only be written once we see the real `obs`/`var`.
 
 > ⚠️ **Memory-bound, not a laptop job.** The atlas is >700k cells / ~33 GB
 > compressed; `readRDS` holds the whole Seurat object in RAM. Run on a HF Job
-> with **≥256 GB** (the TODO's "CPU Performance: 32 vCPU / 256 GB, ~$1.90/hr").
-> No GPU needed.
+> with **≥256 GB** RAM. No GPU needed. Confirmed flavor (`hf jobs hardware`,
+> 2026-06): **`cpu-performance`** = 32 vCPU / 256 GB / 1024 GB disk / **$1.90/hr**.
+> `cpu-xl` (124 GB / $1.00/hr) is the cheaper fallback only if the object fits
+> counts-only.
 
 ## What it produces
 
@@ -28,6 +30,9 @@ which can only be written once we see the real `obs`/`var`.
 - `assemble_h5ad.py` — intermediates → gzip `.h5ad` (sparse throughout), plus the
   obs summary and an optional cohort subset.
 - `run_job.sh` — one-shot in-container driver: download → R → Python → upload.
+  Its dep-install step is a no-op when the baked image is used.
+- `Dockerfile` — `FROM satijalab/seurat:5.5.1` + Python (anndata/scipy/pandas) +
+  `hf` CLI, with the three scripts baked into `/payload`.
 
 ## Two-pass workflow
 
@@ -52,24 +57,44 @@ HF_TOKEN=hf_xxx SUBSET_COL=<cohort_col> SUBSET_VALUE=<steele_label> ./run_job.sh
 
 ## Launching on a HF Job
 
-`run_job.sh` expects R (Seurat + Matrix) and Python in the image. The Seurat
-maintainers' image has the R side; the driver `pip install`s the Python side.
-Confirm the exact `--flavor` slug for the 256 GB CPU tier in your HF account
-(flavor names change); pick the one matching the TODO's 32 vCPU / 256 GB.
+`hf jobs run` runs a **pre-built image** — it does not mount a local directory —
+so the scripts have to live inside the image. Build + push the baked image once:
 
 ```bash
-# from this directory; ships the three scripts into the job as the payload
-hf jobs run \
-  --flavor <256GB-cpu-flavor> \
-  --secret HF_TOKEN=$HF_TOKEN \
-  --timeout 6h \
-  satijalab/seurat:5.0.0 \
-  bash -lc 'cd /payload && ./run_job.sh'
+cd scripts/ingest/loveless
+docker build --platform linux/amd64 -t <user>/loveless-convert:1 .   # x86: HF Jobs are amd64
+docker push <user>/loveless-convert:1
 ```
 
-> If `hf jobs` can't mount a local payload directly, bake these three files into a
-> tiny Dockerfile `FROM satijalab/seurat:5.0.0` (`COPY . /payload`) and run that
-> image instead. Keep `scAtlas.rds.gz` on the job's scratch disk — it's 33 GB.
+**Pass 1 — discover the schema** (no subset). `--detach` returns a job id instead
+of blocking for hours:
+
+```bash
+hf jobs run --detach \
+  --flavor cpu-performance \
+  --secrets HF_TOKEN=$HF_TOKEN \
+  --timeout 6h \
+  <user>/loveless-convert:1
+```
+
+**Pass 2 — emit the analyzable subset** (re-run with the discovered column/value):
+
+```bash
+hf jobs run --detach \
+  --flavor cpu-performance \
+  --secrets HF_TOKEN=$HF_TOKEN \
+  --env SUBSET_COL=<cohort_col> --env SUBSET_VALUE=<steele_label> \
+  --timeout 6h \
+  <user>/loveless-convert:1
+```
+
+Follow it with `hf jobs logs <job_id>` (and `hf jobs ls` / `hf jobs inspect`). The
+1024 GB job disk on `cpu-performance` holds the 33 GB download + intermediates +
+outputs comfortably.
+
+> No-build alternative: run stock `satijalab/seurat:5.5.1` and have the launch
+> command `curl` the three raw scripts from this repo first — but the baked image
+> is reproducible and avoids a network fetch mid-job, so prefer the Dockerfile.
 
 ## After Phase 1 — unblock the manifest
 

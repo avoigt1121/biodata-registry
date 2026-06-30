@@ -27,7 +27,14 @@ mkdir -p "$WORK"
 cd "$WORK"
 
 echo ">> [1/4] python deps (anndata/scipy/pandas/huggingface_hub)"
-pip install --quiet --no-input anndata scipy pandas "huggingface_hub[cli]"
+# No-op when running the baked Dockerfile image (deps already present); only
+# installs when invoked on a stock image. --break-system-packages covers PEP 668
+# (Debian/rocker), with a fallback for older pip that doesn't know the flag.
+if ! python3 -c 'import anndata, scipy, pandas, huggingface_hub' 2>/dev/null; then
+  pip3 install --quiet --no-input --break-system-packages \
+        anndata scipy pandas "huggingface_hub[cli]" \
+    || pip3 install --quiet --no-input anndata scipy pandas "huggingface_hub[cli]"
+fi
 
 echo ">> [2/4] download atlas from Zenodo (33.4 GB; resumable)"
 if [ ! -f scAtlas.rds.gz ]; then
