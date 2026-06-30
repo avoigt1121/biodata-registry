@@ -36,7 +36,9 @@ in_rds  <- args[[1]]
 out_dir <- args[[2]]
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
-message(">> reading ", in_rds, " (memory-heavy step; readRDS auto-decompresses .gz)")
+# The driver peels the OUTER gzip; this file is the inner gzip-compressed RDS,
+# which readRDS decompresses transparently (gzfile detects by content, not name).
+message(">> reading ", in_rds, " (memory-heavy step)")
 obj <- readRDS(in_rds)
 message(">> loaded object of class: ", paste(class(obj), collapse = ", "))
 
@@ -71,15 +73,38 @@ writeLines(capture.output({
 message(">> wrote ", report_path,
         " — INSPECT THIS to identify the cohort/study + patient/sample columns")
 
+# Upload the schema report immediately (if HF_REPO is set), so the obs columns
+# that unblock the manifest are saved even if counts extraction later fails.
+repo <- Sys.getenv("HF_REPO", "")
+if (nzchar(repo)) {
+  message(">> uploading schema_report.txt early to ", repo)
+  try(system2("hf", c("upload", repo, report_path,
+                      "loveless/schema_report.txt", "--repo-type", "dataset")),
+      silent = TRUE)
+}
+
 # ---- 2. extract raw counts only, drop everything else ---------------------
+# Prefer the RNA assay's raw counts; an integrated/SCT default assay may hold
+# corrected values, not raw counts.
+assay_for_counts <- if ("RNA" %in% assay_names) "RNA" else def_assay
+message(">> extracting counts from assay: ", assay_for_counts)
+
+# Seurat v5 can split counts across per-batch layers (counts.1, counts.2, …)
+# after a merge; JoinLayers consolidates them into one 'counts' layer. No-op for
+# v4 objects (wrapped so a missing/failed join doesn't abort).
+obj <- tryCatch(
+  SeuratObject::JoinLayers(obj, assay = assay_for_counts),
+  error = function(e) { message(">> JoinLayers skipped: ", conditionMessage(e)); obj }
+)
+
 # Seurat v5 exposes layers; v4 used slots. Try the v5 path first.
 counts <- tryCatch(
-  SeuratObject::LayerData(obj, assay = def_assay, layer = "counts"),
-  error = function(e) GetAssayData(obj, assay = def_assay, slot = "counts")
+  SeuratObject::LayerData(obj, assay = assay_for_counts, layer = "counts"),
+  error = function(e) GetAssayData(obj, assay = assay_for_counts, slot = "counts")
 )
 if (is.null(counts) || nrow(counts) == 0) {
   stop("could not extract a non-empty 'counts' layer/slot from assay '",
-       def_assay, "' — check schema_report.txt for the raw-counts assay name")
+       assay_for_counts, "' — check schema_report.txt for the raw-counts assay name")
 }
 
 genes    <- rownames(counts)

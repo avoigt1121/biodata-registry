@@ -60,12 +60,24 @@ fi
 
 # ---- PASS 1: full conversion ----------------------------------------------
 echo ">> [1/3] PASS 1 — download atlas from Zenodo (33.4 GB; resumable)"
-if [ ! -f scAtlas.rds.gz ]; then
+if [ ! -f scAtlas.rds.gz ] && [ ! -f scAtlas.rds ]; then
   curl -L --fail --retry 5 -C - -o scAtlas.rds.gz "$ZENODO_URL"
 fi
 
+# Zenodo's scAtlas.rds.gz is DOUBLE-gzipped (gzip wrapping the already-gzip-
+# compressed RDS that saveRDS writes). readRDS peels only ONE gzip layer, so on
+# the raw .gz it hits the inner gzip and dies with "unknown input format". Peel
+# the OUTER layer here; readRDS then handles the remaining inner gzip itself.
+if [ ! -f scAtlas.rds ]; then
+  echo ">> peeling outer gzip layer (file is double-gzipped)"
+  gunzip -c scAtlas.rds.gz > scAtlas.rds
+fi
+
 echo ">> [2/3] R extraction -> intermediates"
-Rscript "$HERE/convert_rds_to_h5ad.R" "$WORK/scAtlas.rds.gz" "$WORK/intermediate"
+# HF_REPO lets the R script upload schema_report.txt as soon as it's written, so
+# the obs columns that unblock the manifest survive even if a later step fails.
+export HF_REPO="$REPO"
+Rscript "$HERE/convert_rds_to_h5ad.R" "$WORK/scAtlas.rds" "$WORK/intermediate"
 
 echo ">> [3/3] Python assembly -> full atlas h5ad"
 python3 "$HERE/assemble_h5ad.py" \
