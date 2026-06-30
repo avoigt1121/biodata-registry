@@ -62,6 +62,18 @@ schema/engine gaps that need no data were closed here.
   read) that pulls Pass 1's full h5ad and filters — no Zenodo/R re-run, ~15–30 min
   on `cpu-xl` (<$1). **All-in run cost ~$10–15.** STILL TO RUN (not CLI-runnable).
   Once run, the manifest unblocks → 0.1.8 + re-pin.
+  - **First live run (2026-06-30) surfaced gotchas, all fixed in tooling:**
+    (a) launching needs `hf` (huggingface_hub) **>= 1.8** — Homebrew's `hf` 1.2.4
+    lacks the `cpu-performance` flavor (caps at cpu-xl/124 GB). (b) `hf jobs run`
+    needs an explicit COMMAND (`bash -c "cd /payload && ./run_job.sh"`); it ignores
+    the image CMD. (c) Dockerfile Python deps must go in a **venv** — the base
+    `satijalab/seurat` image's apt `packaging` can't be pip-uninstalled. (d) **The
+    Zenodo `scAtlas.rds.gz` is DOUBLE-gzipped** (gzip wrapping the gzip-compressed
+    RDS) → `readRDS` gave "unknown input format"; driver now peels the outer gzip
+    first (`4bd1a5d`). R step also hardened (early schema-report upload, RNA-assay
+    counts, JoinLayers for v5 split layers). The ~1 h Zenodo download is re-incurred
+    each run (jobs are ephemeral); cpu-performance MEM during download ≈ bytes
+    fetched (page cache), CPU ~0% — normal, not a stall.
 
 ---
 
