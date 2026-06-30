@@ -74,6 +74,24 @@ schema/engine gaps that need no data were closed here.
     counts, JoinLayers for v5 split layers). The ~1 h Zenodo download is re-incurred
     each run (jobs are ephemeral); cpu-performance MEM during download ≈ bytes
     fetched (page cache), CPU ~0% — normal, not a stall.
+  - **Pass 1 COMPLETE (2026-06-30).** Full atlas h5ad built + uploaded:
+    `loveless/loveless_atlas_counts.h5ad` (5.0 GB, 726,107 cells × 36,601 genes,
+    RNA assay raw counts) + `schema_report.txt` + `obs_summary.txt` on
+    `pdac-research-data`. **Key reveal: the Zenodo object is a 12-STUDY integrated
+    atlas, not one cohort** — studies in `GSE.SRA..Study.` (GSE205013 Werba 167k,
+    PRJCA001063 Peng, GSE202051 Shiau, …, GSE155698 Steele 24k, …). Real obs cols:
+    sample key **`Name`** (234 samples), cell type **`Clusters`** (14 types),
+    condition **`DiseaseState`** (Primary tumor/Adjacent normal/Met/Donor) +
+    **`Treatment`**/`TreatmentType`. Column names are R make.names-mangled (dots).
+  - **Decision: register TWO single-study subsets** (user chose "both"):
+    `gse155698_steele` (GSE155698, the TODO target) + `gse205013_werba` (GSE205013,
+    largest + chemo arms). Manifests committed (`d1ad9b4`), validate clean,
+    `analysis_path=P`, sc+bulk→CROSS_RESOLUTION refuse. **Pending: run Pass 2**
+    (`SUBSET_COL=GSE.SRA..Study. SUBSET_VALUE=GSE155698,GSE205013`, one cpu-xl job,
+    multi-subset loop in run_job.sh) to produce `loveless/GSE155698.h5ad` +
+    `loveless/GSE205013.h5ad`, verify URLs 200, THEN release 0.1.8 + re-pin agent.
+    NB the full atlas stays offline reference (not registered). sc+sc currently
+    returns engine `early` — manifests' refusal_rules guard against pooling subsets.
 
 ---
 
