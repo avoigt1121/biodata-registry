@@ -76,8 +76,14 @@ hf jobs run --detach \
   --flavor cpu-performance \
   --secrets HF_TOKEN=$HF_TOKEN \
   --timeout 6h \
-  <user>/loveless-convert:1
+  <user>/loveless-convert:1 \
+  bash -c "cd /payload && ./run_job.sh"
 ```
+
+> `hf jobs run` requires an explicit COMMAND after the image — it does NOT use the
+> image's `CMD`. The trailing `bash -c "cd /payload && ./run_job.sh"` supplies it.
+> Needs `hf` (huggingface_hub) **>= 1.8** for the `cpu-performance` flavor; older
+> CLIs (e.g. the Homebrew `hf` 1.2.4) only offer up to `cpu-xl` (124 GB).
 
 **Pass 2 — emit the analyzable subset** (set `SUBSET_COL`/`SUBSET_VALUE`). This
 mode does **not** re-download the `.rds` or re-run R — it pulls the full atlas
@@ -89,7 +95,8 @@ hf jobs run --detach \
   --secrets HF_TOKEN=$HF_TOKEN \
   --env SUBSET_COL=<cohort_col> --env SUBSET_VALUE=<steele_label> \
   --timeout 1h \
-  <user>/loveless-convert:1
+  <user>/loveless-convert:1 \
+  bash -c "cd /payload && ./run_job.sh"
 ```
 
 Follow it with `hf jobs logs <job_id>` (and `hf jobs ls` / `hf jobs inspect`). The
