@@ -46,13 +46,18 @@ schema/engine gaps that need no data were closed here.
   (`git push origin main`) + factory-rebuild prod. Note 0.1.7 is **inert** for the
   agent until a single-cell manifest ships (none registered yet), so no functional
   change for end users yet.
-- **Phase 1 conversion tooling READY** (`46b955a`): `scripts/ingest/loveless/`
-  (`convert_rds_to_h5ad.R` + `assemble_h5ad.py` + `run_job.sh` + `README.md`) — the
-  launch-ready `.rds`→h5ad pipeline (schema report → raw-counts extraction →
-  gzip h5ad → upload to private `pdac-research-data`). Two-pass: discover the real
-  cohort/sample columns (Pass 1) then emit the Steele subset (Pass 2). STILL TO
-  RUN on a ≥256 GB CPU HF Job (~$1.90/hr; not CLI-runnable). Once run, the manifest
-  unblocks → 0.1.8 + re-pin.
+- **Phase 1 conversion tooling READY** (`46b955a` + `47b1546`):
+  `scripts/ingest/loveless/` (`convert_rds_to_h5ad.R` + `assemble_h5ad.py` +
+  `run_job.sh` + `Dockerfile` + `README.md`) — the launch-ready `.rds`→h5ad
+  pipeline (schema report → raw-counts extraction → gzip h5ad → upload to private
+  `pdac-research-data`). Two-pass: discover the real cohort/sample columns (Pass 1)
+  then emit the Steele subset (Pass 2). **Confirmed launch params** (`hf jobs
+  hardware` / `--help`, 2026-06): flavor **`cpu-performance`** (32 vCPU/256 GB/
+  1024 GB disk/$1.90/hr; `cpu-xl` 124 GB fallback), image baked `FROM
+  satijalab/seurat:5.5.1`, `hf jobs run --detach --flavor cpu-performance
+  --secrets HF_TOKEN --env SUBSET_COL/SUBSET_VALUE`. `hf jobs run` needs a
+  pre-built image (no local mount) → build+push the Dockerfile first. STILL TO RUN
+  (~$1.90/hr, not CLI-runnable). Once run, the manifest unblocks → 0.1.8 + re-pin.
 
 ---
 
