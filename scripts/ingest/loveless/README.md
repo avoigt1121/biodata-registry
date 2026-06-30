@@ -27,12 +27,14 @@ which can only be written once we see the real `obs`/`var`.
 - `convert_rds_to_h5ad.R` — loads the `.rds`, writes the schema report, extracts
   the raw `counts` layer + `obs` + gene/cell names to MatrixMarket/CSV. Drops
   corrected/scaled/integrated layers (the biggest RAM + output-size lever).
-- `assemble_h5ad.py` — intermediates → gzip `.h5ad` (sparse throughout), plus the
-  obs summary and an optional cohort subset.
-- `run_job.sh` — one-shot in-container driver: download → R → Python → upload.
-  Its dep-install step is a no-op when the baked image is used.
+- `assemble_h5ad.py` — Pass 1: intermediates → full-atlas gzip `.h5ad` (sparse
+  throughout) + the obs summary.
+- `subset_h5ad.py` — Pass 2: reads the full atlas h5ad (backed mode) and writes the
+  cohort subset. No `.rds`, no R — minutes, not hours.
+- `run_job.sh` — driver with two modes (full convert vs subset-only), picked by
+  `SUBSET_COL`. Its dep-install step is a no-op when the baked image is used.
 - `Dockerfile` — `FROM satijalab/seurat:5.5.1` + Python (anndata/scipy/pandas) +
-  `hf` CLI, with the three scripts baked into `/payload`.
+  `hf` CLI, with the scripts baked into `/payload`.
 
 ## Two-pass workflow
 
@@ -77,20 +79,29 @@ hf jobs run --detach \
   <user>/loveless-convert:1
 ```
 
-**Pass 2 — emit the analyzable subset** (re-run with the discovered column/value):
+**Pass 2 — emit the analyzable subset** (set `SUBSET_COL`/`SUBSET_VALUE`). This
+mode does **not** re-download the `.rds` or re-run R — it pulls the full atlas
+h5ad Pass 1 uploaded and subsets it, so it finishes in minutes on a small flavor:
 
 ```bash
 hf jobs run --detach \
-  --flavor cpu-performance \
+  --flavor cpu-xl \
   --secrets HF_TOKEN=$HF_TOKEN \
   --env SUBSET_COL=<cohort_col> --env SUBSET_VALUE=<steele_label> \
-  --timeout 6h \
+  --timeout 1h \
   <user>/loveless-convert:1
 ```
 
 Follow it with `hf jobs logs <job_id>` (and `hf jobs ls` / `hf jobs inspect`). The
 1024 GB job disk on `cpu-performance` holds the 33 GB download + intermediates +
 outputs comfortably.
+
+### Cost
+
+Only the HF Job compute is metered (Zenodo download, HF upload, and Docker Hub are
+free). Pass 1 on `cpu-performance` ($1.90/hr) runs ~2–4.5 h → **~$4–9**. Pass 2 on
+`cpu-xl` ($1.00/hr) is subset-only, ~15–30 min → **<$1**. Budget one debugging
+re-run of Pass 1. All-in: **~$10–15**.
 
 > No-build alternative: run stock `satijalab/seurat:5.5.1` and have the launch
 > command `curl` the three raw scripts from this repo first — but the baked image

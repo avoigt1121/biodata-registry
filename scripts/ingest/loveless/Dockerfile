@@ -22,8 +22,8 @@ RUN pip3 install --no-cache-dir --break-system-packages \
         anndata scipy pandas "huggingface_hub[cli]"
 
 WORKDIR /payload
-COPY convert_rds_to_h5ad.R assemble_h5ad.py run_job.sh ./
-RUN chmod +x convert_rds_to_h5ad.R assemble_h5ad.py run_job.sh
+COPY convert_rds_to_h5ad.R assemble_h5ad.py subset_h5ad.py run_job.sh ./
+RUN chmod +x convert_rds_to_h5ad.R assemble_h5ad.py subset_h5ad.py run_job.sh
 
 # Default entry runs the full pipeline; override per-pass with -e SUBSET_COL/VALUE.
 CMD ["bash", "-lc", "cd /payload && ./run_job.sh"]
