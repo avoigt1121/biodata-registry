@@ -48,7 +48,7 @@ schema/engine gaps that need no data were closed here.
   change for end users yet.
 - **Phase 1 conversion tooling READY** (`46b955a` + `47b1546`):
   `scripts/ingest/loveless/` (`convert_rds_to_h5ad.R` + `assemble_h5ad.py` +
-  `run_job.sh` + `Dockerfile` + `README.md`) — the launch-ready `.rds`→h5ad
+  `subset_h5ad.py` + `run_job.sh` + `Dockerfile` + `README.md`) — the launch-ready `.rds`→h5ad
   pipeline (schema report → raw-counts extraction → gzip h5ad → upload to private
   `pdac-research-data`). Two-pass: discover the real cohort/sample columns (Pass 1)
   then emit the Steele subset (Pass 2). **Confirmed launch params** (`hf jobs
@@ -56,8 +56,12 @@ schema/engine gaps that need no data were closed here.
   1024 GB disk/$1.90/hr; `cpu-xl` 124 GB fallback), image baked `FROM
   satijalab/seurat:5.5.1`, `hf jobs run --detach --flavor cpu-performance
   --secrets HF_TOKEN --env SUBSET_COL/SUBSET_VALUE`. `hf jobs run` needs a
-  pre-built image (no local mount) → build+push the Dockerfile first. STILL TO RUN
-  (~$1.90/hr, not CLI-runnable). Once run, the manifest unblocks → 0.1.8 + re-pin.
+  pre-built image (no local mount) → build+push the Dockerfile first. **Two-mode
+  driver** (`ccb6b09`): Pass 1 = full convert on `cpu-performance` (~$4–9); Pass 2
+  branches on `SUBSET_COL` to a **subset-only** path (`subset_h5ad.py`, backed
+  read) that pulls Pass 1's full h5ad and filters — no Zenodo/R re-run, ~15–30 min
+  on `cpu-xl` (<$1). **All-in run cost ~$10–15.** STILL TO RUN (not CLI-runnable).
+  Once run, the manifest unblocks → 0.1.8 + re-pin.
 
 ---
 
