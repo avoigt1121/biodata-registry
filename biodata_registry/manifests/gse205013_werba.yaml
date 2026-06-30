@@ -1,0 +1,236 @@
+# Werba 2023 — single-cell PDAC cohort (GSE205013), extracted from the Loveless atlas
+#
+# Reference: Werba G, Weissinger D, Kawaler EA, Zhao E et al.
+#   "Single-cell RNA sequencing reveals the effects of chemotherapy on human
+#    pancreatic adenocarcinoma and its tumor microenvironment."
+#   Nat Commun 2023 Feb 13;14(1):797. PMID: 36781852
+#
+# PROVENANCE / SCOPE:
+#   The GSE205013 (Werba) subset of the Loveless integrated PDAC single-cell ATLAS
+#   (Zenodo 10.5281/zenodo.14199536, scAtlas.rds.gz; >700k cells across 12 studies).
+#   Extracted as ONE study's RAW COUNTS (RNA assay) — the LARGEST single study in
+#   the atlas (~167k cells) and the one with explicit chemotherapy treatment arms,
+#   so the natural contrast is treatment-naïve vs treated. A clean single-platform
+#   single-cell cohort for pseudobulk DE and activity scoring, NOT the
+#   batch-corrected atlas (which stays an offline reference).
+#
+# SINGLE-CELL ROUTING (analysis_path 'P'):
+#   modality sc_rnaseq -> analysis_path 'P' (pseudobulk/annotation). DESeq2 runs on
+#   SAMPLE-LEVEL pseudobulk (aggregate cells by sample_id_column first), never per
+#   cell. Never pool with bulk datasets — CROSS_RESOLUTION gate refuses that.
+#
+# COLUMN NAMES are as stored in the atlas obs (R make.names mangling), kept verbatim.
+
+dataset_id: gse205013_werba
+
+title: "Werba 2023 PDAC single-cell RNA-seq — chemotherapy effects (GSE205013; Loveless atlas subset)"
+
+accession: GSE205013
+
+organism: human
+
+modality: sc_rnaseq
+
+platform: "10x Genomics Chromium scRNA-seq (counts as integrated into the Loveless atlas, Zenodo 14199536)"
+
+data_level: raw_counts
+# Raw UMI counts (RNA assay 'counts' layer). single-cell -> analysis_path 'P':
+# pseudobulk by sample_id_column then DESeq2, or per-cell activity scoring.
+
+feature_id_type: gene_symbol
+# 36,601 genes from the atlas RNA assay rownames (standard 10x gene symbols).
+# No probe collapse. CONFIRM against var.index on first load.
+
+dataset_disclaimer: >
+  Single-cell PDAC cohort (Werba 2023, GSE205013) carved from the Loveless
+  integrated atlas — the study of chemotherapy effects, so it carries
+  treatment-naïve and treated samples ('Treatment' / 'TreatmentType'). Single-cell
+  data: report per-sample pseudobulk for differential expression (aggregate by
+  'Name'), never cell-level p-values, and never pool with bulk cohorts. Group sizes
+  must be computed from the loaded data.
+
+description: >
+  Single-cell RNA-seq of human PDAC from Werba et al. 2023 (GSE205013), extracted
+  as raw counts from the Loveless integrated single-cell atlas (Zenodo
+  10.5281/zenodo.14199536). The largest single study in the atlas (~167k cells),
+  with explicit chemotherapy treatment arms. For pseudobulk differential
+  expression (e.g. treatment-naïve vs treated) and decoupleR activity scoring.
+
+preprocessing: >
+  Cells with GSE.SRA..Study. == 'GSE205013' were subset from the Loveless atlas
+  h5ad (RNA assay raw counts only; corrected/scaled/integrated layers dropped at
+  atlas conversion). obs carried verbatim (R make.names naming); var.index holds
+  gene symbols. Hosted as an h5ad on anne-voigt/pdac-research-data
+  (loveless/GSE205013.h5ad).
+
+publication:
+  pmid: "36781852"
+  authors: "Werba G, Weissinger D, Kawaler EA, Zhao E, et al."
+  year: 2023
+  journal: "Nature Communications"
+  title: >
+    Single-cell RNA sequencing reveals the effects of chemotherapy on human
+    pancreatic adenocarcinoma and its tumor microenvironment
+  note: >
+    Counts re-used here via the Loveless integrated atlas
+    (Zenodo 10.5281/zenodo.14199536, CC-BY-4.0), not downloaded from GEO directly.
+
+expression_source:
+  type: url
+  url: "https://huggingface.co/datasets/anne-voigt/pdac-research-data/resolve/main/loveless/GSE205013.h5ad"
+  format: h5ad
+  note: >
+    Single-study subset of the Loveless atlas (cells where GSE.SRA..Study.
+    == 'GSE205013'); RNA-assay raw counts (cells x 36601 genes), obs embedded.
+    Produced by scripts/ingest/loveless (Pass 2 subset). CONFIRM the URL resolves
+    (HTTP 200) after upload.
+
+original_source:
+  type: url
+  url: "https://zenodo.org/records/14199536/files/scAtlas.rds.gz?download=1"
+  format: rds
+  note: >
+    Loveless integrated PDAC single-cell atlas (Seurat .rds, double-gzipped,
+    ~33 GB, >700k cells, 12 studies). GEO original for this study: GSE205013.
+
+metadata_source:
+  type: local
+  embedded: true
+  note: >
+    obs carried from the atlas. Sample key 'Name'; study 'GSE.SRA..Study.';
+    cell type 'Clusters'; treatment 'Treatment' / 'TreatmentType'.
+
+sample_id_column: "Name"
+# Per-sample identifier — the pseudobulk AGGREGATION KEY. Aggregate cells by
+# 'Name' to sample-level pseudobulk before any DESeq2 / meta-analysis.
+
+# ---------------------------------------------------------------------------
+# Metadata column semantic definitions
+# ---------------------------------------------------------------------------
+metadata_columns:
+
+  Clusters:
+    role: sample_origin
+    biological_grouping_allowed: true
+    allowed_values:
+      - "DUCTAL"
+      - "CYCLING DUCTAL"
+      - "ACINAR"
+      - "ENDOCRINE"
+      - "FIBROBLASTS"
+      - "ENDOTHELIAL"
+      - "PERICYTES"
+      - "MYELOID"
+      - "CYCLING. MYELOID"
+      - "TNK"
+      - "CYCLING TNK"
+      - "B CELLS"
+      - "PLASMA"
+      - "MAST"
+    interpretation_warning: >
+      Author-provided cell-type annotation (atlas-wide vocabulary). Use as the
+      cell-type grouping for per-cell-type pseudobulk or activity scoring. Compute
+      the types present and per-type cell counts from the loaded subset.
+    reporting_rules:
+      - "Report cell-type composition as computed from the loaded subset."
+
+  Treatment:
+    role: primary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "Treatment naïve"
+      - "Treatment"
+      - "Unknown"
+      - "N_A"
+    missing_values:
+      - "Unknown"
+      - "N_A"
+      - ""
+    interpretation_warning: >
+      Prior-treatment status — the study's primary axis (chemotherapy effects).
+      'Treatment' = received neoadjuvant therapy; 'Treatment naïve' = untreated.
+      Compute per-arm pseudobulk sample counts from the loaded subset; see
+      'TreatmentType' for the specific regimen.
+    refusal_rules:
+      - "Refuse a contrast arm with fewer than ~3 pseudobulk samples."
+
+  TreatmentType:
+    role: secondary_condition
+    biological_grouping_allowed: true
+    interpretation_warning: >
+      Specific neoadjuvant regimen (FOLFIRINOX, Gemzar/Abraxane, CRT, …), often
+      combined and free-text with data-hygiene quirks (escaped commas, NaN).
+      Normalise and check group sizes before using as a grouping variable; prefer
+      the binary 'Treatment' for the primary contrast.
+
+  DiseaseState:
+    role: secondary_condition
+    biological_grouping_allowed: true
+    allowed_values:
+      - "Primary tumor"
+      - "Adjacent normal"
+      - "Metastatic lesion"
+      - "Donor"
+    missing_values:
+      - ""
+      - "NA"
+      - "nan"
+    interpretation_warning: >
+      Tissue/disease compartment. Werba is predominantly primary tumor; confirm
+      which states are present in this subset and their per-sample counts.
+
+# ---------------------------------------------------------------------------
+# Dataset-level reporting and refusal rules
+# ---------------------------------------------------------------------------
+reporting_rules:
+  - "Report cell counts, cell-type composition, and per-sample/per-arm sizes as computed from the loaded data."
+  - "State that differential expression is computed on SAMPLE-LEVEL PSEUDOBULK (cells aggregated by 'Name'), not per cell."
+  - "State the study of origin (Werba 2023, GSE205013) and that counts came via the Loveless atlas."
+
+refusal_rules:
+  - "Refuse cell-level differential-expression p-values — aggregate to pseudobulk by 'Name' first (cells are not independent replicates)."
+  - "Refuse to pool or integrate with any bulk dataset — single-cell and bulk are different resolutions (CROSS_RESOLUTION)."
+  - "Refuse to pool with the full Loveless atlas or its other study subsets for DE — cross-study integration here is batch-confounded."
+  - "Refuse a pseudobulk contrast arm with fewer than ~3 samples (compute sizes from the loaded data)."
+  - "Refuse survival analysis — no survival/outcome endpoints are provided."
+
+# ---------------------------------------------------------------------------
+# Analysis configuration
+# ---------------------------------------------------------------------------
+group_columns:
+  - "Clusters"
+  - "Treatment"
+  - "DiseaseState"
+
+feature_mapping:
+  requires_collapse: false
+
+survival_columns:
+  event_column: null
+  time_column: null
+
+default_contrasts:
+  - design_factor: "Treatment"
+    test_group: "Treatment"
+    control_group: "Treatment naïve"
+    subset_query: "Treatment in ['Treatment', 'Treatment naïve']"
+    method: deseq2
+    note: >
+      Pseudobulk DE of treated vs treatment-naïve: aggregate cells by 'Name'
+      (optionally within a 'Clusters' cell type), then DESeq2. Confirm both arms
+      have >=3 samples in this subset before running.
+
+valid_workflows:
+  - sc_annotation
+  - pseudobulk_de
+  - activity_scoring
+
+limitations:
+  - "Single-cell data: differential expression must be done on per-sample pseudobulk (aggregate by 'Name'); cell-level p-values are pseudoreplication and are refused."
+  - "Never pool with bulk datasets (different resolution) — enforced by the integration engine's CROSS_RESOLUTION gate."
+  - "Counts come via the Loveless integrated atlas (Zenodo 14199536), not a direct GEO download; the atlas authors' QC/cell filtering and 'Clusters' annotation are inherited."
+  - "feature_id_type is gene_symbol inferred from the atlas RNA assay (36,601 genes); confirm var.index are symbols on first load."
+  - "'TreatmentType' is free-text combined regimens with data-hygiene quirks (escaped commas, NaN); normalise before grouping and prefer the binary 'Treatment'."
+  - "Per-arm pseudobulk sample counts are NOT fixed here — compute them from the loaded subset before any contrast."
+  - "No survival or clinical-outcome fields are provided."
+  - "Do not integrate this subset with other single-study subsets of the same atlas for DE — that re-introduces the cross-study batch confound the subsetting avoids."

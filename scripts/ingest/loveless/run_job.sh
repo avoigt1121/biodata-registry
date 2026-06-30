@@ -43,18 +43,26 @@ if ! python3 -c 'import anndata, scipy, pandas, huggingface_hub' 2>/dev/null; th
 fi
 
 # ---- PASS 2: cheap subset-only (no Zenodo download, no R) ------------------
+# SUBSET_VALUE may be a comma-separated list to emit several per-study subsets
+# from ONE atlas download (e.g. "GSE155698,GSE205013"). Each value V is written
+# and uploaded as loveless/V.h5ad.
 if [ -n "${SUBSET_COL:-}" ]; then
   : "${SUBSET_VALUE:?set SUBSET_VALUE alongside SUBSET_COL for Pass 2}"
   echo ">> [subset] PASS 2 — fetching the full atlas h5ad from $REPO (no re-conversion)"
   hf download "$REPO" "$FULL_H5AD_REMOTE" --repo-type dataset --local-dir "$WORK/dl"
-  python3 "$HERE/subset_h5ad.py" \
-    --in-h5ad "$WORK/dl/$FULL_H5AD_REMOTE" \
-    --out "$WORK/loveless_steele_subset.h5ad" \
-    --subset-col "$SUBSET_COL" --subset-value "$SUBSET_VALUE"
-  echo ">> [subset] uploading the cohort subset"
-  hf upload "$REPO" "$WORK/loveless_steele_subset.h5ad" \
-        loveless/loveless_steele_subset.h5ad --repo-type dataset
-  echo ">> PASS 2 done — register loveless/loveless_steele_subset.h5ad"
+  ATLAS="$WORK/dl/$FULL_H5AD_REMOTE"
+  IFS=',' read -ra VALS <<< "$SUBSET_VALUE"
+  for raw in "${VALS[@]}"; do
+    v="$(echo "$raw" | xargs)"                          # trim surrounding spaces
+    safe="$(echo "$v" | tr -c 'A-Za-z0-9._-' '_')"      # filesystem-safe name
+    out="$WORK/${safe}.h5ad"
+    echo ">> [subset] $SUBSET_COL == '$v'  ->  loveless/${safe}.h5ad"
+    python3 "$HERE/subset_h5ad.py" \
+      --in-h5ad "$ATLAS" --out "$out" \
+      --subset-col "$SUBSET_COL" --subset-value "$v"
+    hf upload "$REPO" "$out" "loveless/${safe}.h5ad" --repo-type dataset
+  done
+  echo ">> PASS 2 done — registered subsets: $SUBSET_VALUE"
   exit 0
 fi
 
