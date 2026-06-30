@@ -19,6 +19,10 @@
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
+# Prefer the baked image's venv (Python deps live there, isolated from the base
+# image's apt-managed packages). No-op on a stock image where it doesn't exist.
+[ -d /opt/venv/bin ] && export PATH="/opt/venv/bin:$PATH"
+
 WORK="${WORK:-/data}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO="anne-voigt/pdac-research-data"

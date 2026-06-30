@@ -13,17 +13,23 @@ FROM satijalab/seurat:5.5.1
 
 # Python side for h5ad assembly + HF upload (the base image is R-only).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        python3 python3-pip curl ca-certificates \
+        python3 python3-pip python3-venv curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Throwaway job image, so install into the system env (PEP 668 override on
-# Debian/rocker). Keeps PATH simple — no venv activation needed at runtime.
-RUN pip3 install --no-cache-dir --break-system-packages \
-        anndata scipy pandas "huggingface_hub[cli]"
+# Install Python deps in an isolated venv — NOT the system env. The base image's
+# `packaging` (and others) are apt-managed with no RECORD file, so pip cannot
+# upgrade/uninstall them (`--break-system-packages` doesn't help). A venv sidesteps
+# the clash entirely. Rscript stays on PATH (system); python3/pip/hf become the venv's.
+ENV VENV=/opt/venv
+RUN python3 -m venv "$VENV"
+ENV PATH="$VENV/bin:$PATH"
+RUN pip install --no-cache-dir anndata scipy pandas "huggingface_hub[cli]"
 
 WORKDIR /payload
 COPY convert_rds_to_h5ad.R assemble_h5ad.py subset_h5ad.py run_job.sh ./
 RUN chmod +x convert_rds_to_h5ad.R assemble_h5ad.py subset_h5ad.py run_job.sh
 
 # Default entry runs the full pipeline; override per-pass with -e SUBSET_COL/VALUE.
-CMD ["bash", "-lc", "cd /payload && ./run_job.sh"]
+# Plain `bash -c` (not -lc) so the Docker-set PATH (venv first) isn't reset by
+# /etc/profile; run_job.sh also re-asserts the venv on PATH defensively.
+CMD ["bash", "-c", "cd /payload && ./run_job.sh"]
