@@ -53,8 +53,9 @@ if [ -n "${SUBSET_COL:-}" ]; then
   ATLAS="$WORK/dl/$FULL_H5AD_REMOTE"
   IFS=',' read -ra VALS <<< "$SUBSET_VALUE"
   for raw in "${VALS[@]}"; do
-    v="$(echo "$raw" | xargs)"                          # trim surrounding spaces
-    safe="$(echo "$v" | tr -c 'A-Za-z0-9._-' '_')"      # filesystem-safe name
+    v="$(printf '%s' "$raw" | xargs)"                   # trim surrounding spaces
+    safe="$(printf '%s' "$v" | tr -c 'A-Za-z0-9._-' '_')"  # filesystem-safe name
+    # (printf, not echo: echo's trailing newline would become a stray '_')
     out="$WORK/${safe}.h5ad"
     echo ">> [subset] $SUBSET_COL == '$v'  ->  loveless/${safe}.h5ad"
     python3 "$HERE/subset_h5ad.py" \
