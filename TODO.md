@@ -60,11 +60,17 @@ pdac-analysis-orchestrator.
 
 ### Dataset ingestion (from PI research to-do list, 2026-06-26)
 
-- **High — Loveless single-cell dataset: obtain + integrate.** New single-cell
-  PDAC cohort from the PI's research to-do list. Build a `modality: sc_rnaseq`
-  manifest, host the h5ad on `anne-voigt/pdac-research-data`, and register it.
-  Single-cell *analysis* wiring + serving/runtime design is DecoupleRpy_Agent's
-  job — cross-ref its TODO.
+- ✅ **DONE (2026-07-01) — Loveless single-cell dataset: obtained + integrated.**
+  The Zenodo object turned out to be a 12-study integrated atlas (726k cells), so
+  we registered TWO clean single-study subsets: `gse155698_steele` (GSE155698) +
+  `gse205013_werba` (GSE205013), h5ads hosted on `pdac-research-data`, shipped in
+  **0.1.8** (`7a25a86`), agent re-pinned to dev (`e2be07b`). Full atlas retained as
+  offline reference (not registered). Conversion tooling in
+  `scripts/ingest/loveless/`. Single-cell *analysis* wiring + serving/runtime is
+  DecoupleRpy_Agent's job (`feat/loveless-sc-serving`) — cross-ref its TODO.
+  Remaining: dev factory-rebuild + RUNNING confirm → promote 0.1.8 to prod.
+
+  <details><summary>Original plan (kept for reference)</summary>
 
   **Provenance & source (confirmed 2026-06-29):**
   - Loveless et al. 2025, *Clin Cancer Res* 31(4):756–772 (PMID 39636224, DOI
@@ -127,6 +133,8 @@ pdac-analysis-orchestrator.
     Can graduate to a dedicated mode later like `concordance` did.
     NOTE: not yet committed/released — needs a version bump + re-pin in
     DecoupleRpy_Agent's `requirements.txt` to reach the agent.
+
+  </details>
 - **Med — Candidate-dataset intake checklist.** For every new candidate *public*
   dataset, run a pre-onboarding query to confirm what it actually contains before
   building a manifest: (a) does it carry **survival** information? (b) is it

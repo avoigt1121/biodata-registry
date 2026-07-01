@@ -1,6 +1,6 @@
 # memory.md — biodata-registry Working State
 
-Last updated: 2026-06-29
+Last updated: 2026-07-01
 
 ---
 
@@ -86,12 +86,22 @@ schema/engine gaps that need no data were closed here.
   - **Decision: register TWO single-study subsets** (user chose "both"):
     `gse155698_steele` (GSE155698, the TODO target) + `gse205013_werba` (GSE205013,
     largest + chemo arms). Manifests committed (`d1ad9b4`), validate clean,
-    `analysis_path=P`, sc+bulk→CROSS_RESOLUTION refuse. **Pending: run Pass 2**
-    (`SUBSET_COL=GSE.SRA..Study. SUBSET_VALUE=GSE155698,GSE205013`, one cpu-xl job,
-    multi-subset loop in run_job.sh) to produce `loveless/GSE155698.h5ad` +
-    `loveless/GSE205013.h5ad`, verify URLs 200, THEN release 0.1.8 + re-pin agent.
-    NB the full atlas stays offline reference (not registered). sc+sc currently
-    returns engine `early` — manifests' refusal_rules guard against pooling subsets.
+    `analysis_path=P`, sc+bulk→CROSS_RESOLUTION refuse. NB the full atlas stays
+    offline reference (not registered). sc+sc currently returns engine `early` —
+    manifests' refusal_rules guard against pooling subsets.
+  - **Pass 2 DONE + 0.1.8 RELEASED (2026-07-01).** One cpu-xl job (multi-subset
+    loop) produced `loveless/GSE155698.h5ad` (159 MB) + `loveless/GSE205013.h5ad`
+    (1.6 GB) on pdac-research-data. Gotcha: run_job.sh's `echo`→`tr` put a trailing
+    `_` in the names (`GSE155698_.h5ad`); fixed to `printf` (`7a25a86`) and the two
+    files were **server-side renamed** (HfApi CommitOperationCopy+Delete, no
+    re-upload) to the clean names the manifests reference. Pass 2 also first failed
+    fast (ERROR 10s) — the in-job `HF_TOKEN` secret lacked pdac-research-data read;
+    must pass a token with BOTH jobs-launch AND that repo's access. **0.1.8** wheel
+    `biodata_registry-0.1.8-py3-none-any.whl`, HF rev
+    `0e29c5efa60a66b417f79e067dc2b0d927fcdc83`, sha256 `b7edc1aa74059a76f07…`.
+    Agent re-pinned 0.1.7→0.1.8 on main (`e2be07b`) → pushed to **dev**
+    (`hf-dev/main`); prod still 0.1.6. Needs dev factory-rebuild + RUNNING confirm
+    before prod promotion. Loveless ingestion COMPLETE end-to-end.
 
 ---
 
