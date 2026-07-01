@@ -99,9 +99,12 @@ schema/engine gaps that need no data were closed here.
     must pass a token with BOTH jobs-launch AND that repo's access. **0.1.8** wheel
     `biodata_registry-0.1.8-py3-none-any.whl`, HF rev
     `0e29c5efa60a66b417f79e067dc2b0d927fcdc83`, sha256 `b7edc1aa74059a76f07…`.
-    Agent re-pinned 0.1.7→0.1.8 on main (`e2be07b`) → pushed to **dev**
-    (`hf-dev/main`); prod still 0.1.6. Needs dev factory-rebuild + RUNNING confirm
-    before prod promotion. Loveless ingestion COMPLETE end-to-end.
+    Agent re-pinned 0.1.7→0.1.8 on main (`e2be07b`) → pushed to **BOTH dev and
+    prod** (clean FF `c1cece4`→`e2be07b`, requirements-only; prod jumped 0.1.6→0.1.8,
+    skipping the never-promoted 0.1.7). **Both Spaces still need a FACTORY rebuild**
+    (user driving) to install the new wheel — a normal rebuild serves the stale
+    cached one. Loveless ingestion COMPLETE end-to-end; only the factory rebuilds +
+    RUNNING confirmation remain.
 
 ---
 
